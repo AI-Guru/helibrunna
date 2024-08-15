@@ -9,6 +9,7 @@ from dacite import from_dict
 from datasets import load_dataset
 import json
 from omegaconf import OmegaConf
+import shutil
 from safetensors.torch import save_file
 from tokenizers import Tokenizer
 from tokenizers.models import WordLevel
@@ -18,6 +19,7 @@ from torch.utils.data import DataLoader
 from transformers import DataCollatorForLanguageModeling
 from transformers import PreTrainedTokenizerFast
 from xlstm.xlstm_lm_model import xLSTMLMModel, xLSTMLMModelConfig
+
 
 # Import the LinearWarmupCosineAnnealing scheduler from the experiments module.
 if not os.path.exists("experiments/lr_scheduler.py"):
@@ -165,6 +167,9 @@ def run_training(config_path: str):
 
     # Get a subset of the config that includes only the model.
     model_config = OmegaConf.select(config, "model")
+
+    # Create the readme.
+    create_readme(output_dir, config)
 
     # Save the config as yaml and delete it.
     with open(os.path.join(output_dir, "config.yaml"), "w") as f:
@@ -329,6 +334,44 @@ def save_model(model, model_config, output_dir):
     # Save the model configuration as JSON.
     model_config_path = os.path.join(output_dir, "config.yaml")
     OmegaConf.save(model_config, model_config_path)
+
+def create_readme(output_dir, config):
+
+    # Load the template.
+    template_path = os.path.join("assets", "readmetemplate.md")
+    if not os.path.exists(template_path):
+        raise FileNotFoundError(f"Template not found: {template_path}")
+    
+    # Load the template.
+    with open(template_path, "r") as f:
+        readme_text = f.read()
+
+    # Project name.
+    model_name = config.training.model_name
+
+    # Configuration convert the configuration to a yaml string.
+    configuration = OmegaConf.to_yaml(config)
+
+    # Format the template.
+    readme_text = readme_text.format(
+        model_name=config.training.model_name,
+        configuration=configuration
+    )
+
+    # Save the readme.
+    readme_path = os.path.join(output_dir, "README.md")
+    with open(readme_path, "w") as f:
+        f.write(readme_text)
+
+    # Copy the banner.
+    banner_path = os.path.join("assets", "trainedwithhelibrunna.jpg")
+    if not os.path.exists(banner_path):
+        raise FileNotFoundError(f"Banner not found: {banner_path}")
+    banner_target_path = os.path.join(output_dir, "banner.jpg")
+    shutil.copy(banner_path, banner_target_path)
+
+    assert False
+
 
 
 # Run the training.
