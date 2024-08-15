@@ -306,6 +306,13 @@ def run_training(config_path: str):
 
 
 def train_whitespace_tokenizer(raw_datasets):
+    """
+    Trains a whitespace tokenizer using the provided raw datasets.
+    Args:
+        raw_datasets (dict): A dictionary containing the raw datasets.
+    Returns:
+        PreTrainedTokenizerFast: The trained whitespace tokenizer.
+    """
     
     # Initialize the tokenizer.
     tokenizer = Tokenizer(WordLevel(unk_token="[UNK]"))
