@@ -26,15 +26,15 @@ These features are currently implemented:
 - Support for [TensorBoard](https://www.tensorflow.org/tensorboard).
 - Support for [Weights & Biases](https://wandb.ai/home).
 - Distributed training [Accelerate](https://huggingface.co/docs/accelerate/index) (untested).
+- Basic model inference with temperature sampling.
+- Uploading to Hugging Face.
 
 These features are planned:
 
-- Running model inference.
 - Exposing the model as an OpenAI compatible API.
 - Fine-tuning.
 - Fine-tuning with LoRA adapters.
 - Quantization.
-- Uploading to Hugging Face.
 - Downloading from Hugging Face.
 - Training on a GPT2-size dataset, such as openwebtext.
 
@@ -70,3 +70,33 @@ python train.py configs/musicxlstm.yaml
 ```
 
 ## Running inference
+
+This is how you can run inference with a trained model:
+
+```
+python generate.py --model_path MODEL_PATH --tokenizer_path TOKENIZER_PATH --temperature 0.5 --max_length 100 --prompt "PROMPT"
+```
+
+Set `MODEL_PATH`, `TOKENIZER_PATH`, and `PROMPT` properly. `MODEL_PATH` is usually a directory that starts with `run_`.
+
+## Uploading a model to Hugging Face.
+
+Make sure that you are logged into Hugging Face. If you are not, do this:
+
+```
+huggingface-cli login
+```
+
+Make sure you use an access token that allows for writing.
+
+This is how you can push a model. It will use the latest checkpoint:
+
+```
+python pushtohuggingface.py --model_path MODEL_PATH --username_or_orga USERNAME_OR_ORGA --repo_name REPO_NAME --private true
+```
+
+Make sure to fill in `MODEL_PATH`, `USERNAME_OR_ORGA`, and `REPO_NAME`. `MODEL_PATH` is usually a directory that starts with `run_`.
+
+You might want to edit the `README.md` file.
+
+# THANKS!

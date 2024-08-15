@@ -1,3 +1,14 @@
+---
+language: 
+{languages}
+tags:
+{tags}
+license: {license}
+datasets:
+{datasets}
+base_model: {base_model}
+---
+
 # {model_name} - An xLSTM Model
 
 ![Trained with Helibrunna](banner.jpg)

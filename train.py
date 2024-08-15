@@ -335,6 +335,7 @@ def save_model(model, model_config, output_dir):
     model_config_path = os.path.join(output_dir, "config.yaml")
     OmegaConf.save(model_config, model_config_path)
 
+
 def create_readme(output_dir, config):
 
     # Load the template.
@@ -352,10 +353,39 @@ def create_readme(output_dir, config):
     # Configuration convert the configuration to a yaml string.
     configuration = OmegaConf.to_yaml(config)
 
+    # Base model.
+    base_model = "None"
+    if "base_model" in config.model:
+        base_model = config.model.base_model
+
+    # Tags.
+    tags = ["NLP"]
+    if "tags" in config.model:
+        tags = config.model.tags.split(",")
+    tags = "\n".join([f"  - {tag}" for tag in tags])
+
+    # Languages.
+    languages = ["en"]
+    if "languages" in config.model:
+        languages = config.model.languages.split(",")
+    languages = "\n".join([f"  - {language}" for language in languages])
+
+    # Datasets.
+    datasets = [config.dataset.hugging_face_id]
+    datasets = "\n".join([f"  - {dataset}" for dataset in datasets])
+    
+    # License.
+    license = "mit"
+
     # Format the template.
     readme_text = readme_text.format(
-        model_name=config.training.model_name,
-        configuration=configuration
+        model_name=model_name,
+        configuration=configuration,
+        base_model=base_model,
+        tags=tags,
+        languages=languages,
+        datasets=datasets,
+        license=license,
     )
 
     # Save the readme.
@@ -369,9 +399,6 @@ def create_readme(output_dir, config):
         raise FileNotFoundError(f"Banner not found: {banner_path}")
     banner_target_path = os.path.join(output_dir, "banner.jpg")
     shutil.copy(banner_path, banner_target_path)
-
-    assert False
-
 
 
 # Run the training.
