@@ -9,15 +9,26 @@ from safetensors.torch import load_file
 import time
 
 def generate(
-        model_path: str,
-        tokenizer_path: str,
-        temperature: float,
-        max_length: int,
-        prompt: str
+        model_path_or_repo: str,
+        prompt: str,
+        tokenizer_path: str = None,
+        temperature: float = 0.5,
+        max_length: int = 100,
 ):
     
     # Set the device.
     device = "cuda" if torch.cuda.is_available() else "cpu"
+
+    # Download the model if it doesn't exist.
+    if not os.path.exists(model_path_or_repo):
+        from huggingface_hub import snapshot_download
+        try:
+            model_path=snapshot_download(repo_id=model_path_or_repo)
+            tokenizer_path=model_path
+        except Exception as e:
+            raise f"Failed to download the model: {e}"
+    else:
+        model_path = model_path_or_repo
 
     # Load the config.
     print(f"Loading model config from {model_path}...")
