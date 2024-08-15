@@ -1,0 +1,37 @@
+training:
+  batch_size: 256
+  lr: 0.001
+  lr_warmup_steps: 2000
+  lr_decay_until_steps: 20000
+  lr_decay_factor: 0.001
+  weight_decay: 0.1
+  amp_precision: bfloat16
+  weight_precision: float32
+  enable_mixed_precision: true
+  num_epochs: 20
+  output_dir: "output/musicxlstm"
+  save_every_step: 100
+  log_every_step: 10
+  wandb_project: "musicxlstm"
+  tensorboard_dir: "runs"
+
+
+model:
+  num_blocks: 2
+  embedding_dim: 64
+  mlstm_block:
+    mlstm:
+      num_heads: 1
+  slstm_block:
+    slstm:
+      num_heads: 1
+  slstm_at: [1]
+  context_length: 256
+
+
+dataset:
+  hugging_face_id: "TristanBehrens/js-fakes-4bars"
+  
+tokenizer:
+  type: "whitespace"
+
