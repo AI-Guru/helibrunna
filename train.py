@@ -1,6 +1,16 @@
+"""
+Helibrunna - A HuggingFace compatible xLSTM trainer.
+
+Copyright (c) 2024 Dr. Tristan Behrens
+
+All rights reserved. This software and associated documentation files (the "Software") may only be used, copied, modified, merged, published, distributed, sublicensed, and/or sold under the terms and conditions set forth by the author, Dr. Tristan Behrens.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+"""
+
 import datetime
 import os
-
 import fire
 import matplotlib.pyplot as plt
 import torch
@@ -20,8 +30,8 @@ from transformers import DataCollatorForLanguageModeling
 from transformers import PreTrainedTokenizerFast
 from xlstm.xlstm_lm_model import xLSTMLMModel, xLSTMLMModelConfig
 
-
 # Import the LinearWarmupCosineAnnealing scheduler from the experiments module.
+# Source: https://github.com/NX-AI/xlstm/tree/main
 if not os.path.exists("experiments/lr_scheduler.py"):
     import urllib.request
     url = "https://raw.githubusercontent.com/NX-AI/xlstm/main/experiments/lr_scheduler.py"
@@ -31,6 +41,15 @@ from experiments.lr_scheduler import LinearWarmupCosineAnnealing
 
 
 def run_training(config_path: str):
+    """
+    Run the training process based on the provided configuration file.
+    Args:
+        config_path (str): The path to the configuration file.
+    Raises:
+        FileNotFoundError: If the configuration file is not found.
+    Returns:
+        None
+    """
 
     # Initialize the accelerator.
     print("Initializing accelerator...")
@@ -183,7 +202,7 @@ def run_training(config_path: str):
     if wandb_project is not None:
         print(f"Enabling wandb logging for project: {wandb_project}")
         import wandb
-        wandb.init(project=wandb_project)
+        wandb.init(project=wandb_project, name=run_dir)
 
     # Enable tensorboard if requested.
     if tensorboard_dir is not None:
@@ -194,7 +213,6 @@ def run_training(config_path: str):
 
     # Training loop.
     step = 0
-    epoch = 1
     running_loss = []
     history = {
         "loss": [],
@@ -296,22 +314,37 @@ def train_whitespace_tokenizer(raw_datasets):
         special_tokens=["[UNK]", "[CLS]", "[SEP]", "[PAD]", "[MASK]"]
     )
 
+    # Train the tokenizer.
     def get_training_corpus():
         dataset = raw_datasets["train"]
         for start_idx in range(0, len(dataset), 1000):
             samples = dataset[start_idx : start_idx + 1000]
             yield samples["text"]
-
     training_corpus = get_training_corpus()
     tokenizer.train_from_iterator(training_corpus, trainer=trainer)
 
+    # Convert the tokenizer to a fast tokenizer.
     tokenizer = PreTrainedTokenizerFast(tokenizer_file="tokenizer.json")
     tokenizer.add_special_tokens({'pad_token': '[PAD]'})
 
+    # Return the tokenizer.
     return tokenizer
 
 
 def get_torch_dtype(dtype: str) -> torch.dtype:
+    """
+    Returns the corresponding torch.dtype for the given dtype string.
+
+    Args:
+        dtype (str): The dtype string.
+
+    Returns:
+        torch.dtype: The corresponding torch.dtype.
+
+    Raises:
+        ValueError: If the dtype is unknown.
+    """
+
     if dtype == "float32":
         return torch.float32
     elif dtype == "bfloat16":
@@ -323,6 +356,17 @@ def get_torch_dtype(dtype: str) -> torch.dtype:
     
 
 def save_model(model, model_config, output_dir):
+    """
+    Save the model and its configuration to the specified output directory.
+
+    Args:
+        model (torch.nn.Module): The model to be saved.
+        model_config (OmegaConf.DictConfig): The configuration of the model.
+        output_dir (str): The directory where the model and configuration will be saved.
+
+    Returns:
+        None
+    """
 
     # Make sure the folder exists.
     os.makedirs(output_dir, exist_ok=True)
@@ -337,6 +381,16 @@ def save_model(model, model_config, output_dir):
 
 
 def create_readme(output_dir, config):
+    """
+    Create a README file based on a template and provided configuration.
+    Args:
+        output_dir (str): The directory where the README file will be saved.
+        config (dict): The configuration dictionary containing the necessary information.
+    Raises:
+        FileNotFoundError: If the template or banner file is not found.
+    Returns:
+        None
+    """
 
     # Load the template.
     template_path = os.path.join("assets", "readmetemplate.md")

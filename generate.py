@@ -1,3 +1,14 @@
+"""
+Helibrunna - A HuggingFace compatible xLSTM trainer.
+
+Copyright (c) 2024 Dr. Tristan Behrens
+
+All rights reserved. This software and associated documentation files (the "Software") may only be used, copied, modified, merged, published, distributed, sublicensed, and/or sold under the terms and conditions set forth by the author, Dr. Tristan Behrens.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+"""
+
 import fire
 import os
 from omegaconf import OmegaConf
@@ -14,12 +25,25 @@ def generate(
         tokenizer_path: str = None,
         temperature: float = 0.5,
         max_length: int = 100,
-):
-    
+) -> None:
+    """
+    Generates text continuation based on a given prompt using a pre-trained language model.
+    Args:
+        model_path_or_repo (str): The path to the model or the Hugging Face repository ID.
+        prompt (str): The prompt text to generate continuation from.
+        tokenizer_path (str, optional): The path to the tokenizer. Defaults to None.
+        temperature (float, optional): The temperature value for sampling from the distribution. Defaults to 0.5.
+        max_length (int, optional): The maximum length of the generated text. Defaults to 100.
+    Raises:
+        ValueError: If the model weights, tokenizer, or config are not found at the specified paths.
+    Returns:
+        None
+    """
+
     # Set the device.
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
-    # Download the model if it doesn't exist.
+    # Download the model if it doesn't exist. Or at least try to.
     if not os.path.exists(model_path_or_repo):
         from huggingface_hub import snapshot_download
         try:
@@ -74,7 +98,7 @@ def generate(
         # Use the temperature to sample from the distribution.
         outputs = outputs / temperature
         outputs = torch.nn.functional.softmax(outputs, dim=-1)
-        outputs = torch.multinomial(outputs[0, 0], num_samples=1)
+        outputs = torch.multinomial(outputs[0, -1], num_samples=1)
 
         # Add to the inputs.
         inputs = torch.cat([inputs, outputs.unsqueeze(0)], dim=1)
@@ -92,5 +116,7 @@ def generate(
     output = tokenizer.decode(inputs[0].tolist())
     print(output)
 
+
+# Entry point.
 if __name__ == "__main__":
     fire.Fire(generate)

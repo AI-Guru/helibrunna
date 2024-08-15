@@ -1,3 +1,14 @@
+"""
+Helibrunna - A HuggingFace compatible xLSTM trainer.
+
+Copyright (c) 2024 Dr. Tristan Behrens
+
+All rights reserved. This software and associated documentation files (the "Software") may only be used, copied, modified, merged, published, distributed, sublicensed, and/or sold under the terms and conditions set forth by the author, Dr. Tristan Behrens.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+"""
+
 import fire
 import os
 import glob
@@ -11,9 +22,16 @@ def push_to_huggingface(
         private: bool = False,
 ):
     """
-    Pushes a model to huggingface.
+    Pushes a model to Hugging Face Model Hub repository.
+    Args:
+        model_path (str): The path to the model directory.
+        username_or_orga (str): The username or organization name on Hugging Face Model Hub.
+        repo_name (str): The name of the repository on Hugging Face Model Hub.
+        private (bool, optional): Whether the repository should be private. Defaults to False.
+    Raises:
+        ValueError: If the model path does not exist or if no checkpoints are found.
     """
-    
+
     if not os.path.exists(model_path):
         raise ValueError(f"Model path {model_path} does not exist.")
     
@@ -53,10 +71,10 @@ def push_to_huggingface(
     
     # Create the repository.
     print(f"Creating repository {username_or_orga}/{repo_name}...")
-    #create_repo(
-    #    f"{username_or_orga}/{repo_name}",
-    #    private=private,
-    #)
+    create_repo(
+        f"{username_or_orga}/{repo_name}",
+        private=private,
+    )
 
     # Push the files.
     api = HfApi()
@@ -73,6 +91,6 @@ def push_to_huggingface(
     print(f"Pushed {len(files)} files to {username_or_orga}/{repo_name}.")
 
 
-
+# Entry point.
 if __name__ == "__main__":
     fire.Fire(push_to_huggingface)
