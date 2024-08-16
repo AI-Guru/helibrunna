@@ -11,6 +11,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 import fire
 import os
+import glob
 from omegaconf import OmegaConf
 from xlstm.xlstm_lm_model import xLSTMLMModel, xLSTMLMModelConfig
 from transformers import PreTrainedTokenizerFast
@@ -24,8 +25,7 @@ from source.utilities import display_logo
 def generate(
         model_path_or_repo: str,
         prompt: str,
-        tokenizer_path: str = None,
-        temperature: float = 0.5,
+        temperature: float = 1.0,
         max_length: int = 100,
 ) -> None:
     """
@@ -33,7 +33,6 @@ def generate(
     Args:
         model_path_or_repo (str): The path to the model or the Hugging Face repository ID.
         prompt (str): The prompt text to generate continuation from.
-        tokenizer_path (str, optional): The path to the tokenizer. Defaults to None.
         temperature (float, optional): The temperature value for sampling from the distribution. Defaults to 0.5.
         max_length (int, optional): The maximum length of the generated text. Defaults to 100.
     Raises:
@@ -56,8 +55,28 @@ def generate(
             tokenizer_path=model_path
         except Exception as e:
             raise f"Failed to download the model: {e}"
+    
+    # Use a local model.
     else:
-        model_path = model_path_or_repo
+
+        # Set the model path and tokenizer path.
+        model_path = None
+        tokenizer_path = model_path_or_repo
+
+        # Find all the checkpoint folders, folders that start with "checkpoint-". Then find the last one.
+        checkpoint_folders = glob.glob(os.path.join(model_path_or_repo, "checkpoint-*"))
+        for checkpoint_folder in checkpoint_folders:
+            if checkpoint_folder.endswith("-last"):
+                model_path = checkpoint_folder
+                break
+        if model_path is None:
+            raise ValueError("No model checkpoint found.")
+
+        # Find the tokenizer folder.
+        if os.path.exists(os.path.join(model_path_or_repo, "tokenizer.json")):
+            tokenizer_path = model_path_or_repo
+        if not os.path.exists(tokenizer_path):
+            raise ValueError("Tokenizer not found.")
 
     # Load the config.
     print(f"Loading model config from {model_path}...")
