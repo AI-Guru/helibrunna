@@ -10,9 +10,11 @@ This repository is dedicated to my second hometown Heilbronn, who has become one
 This work is sponsored by [KI Salon](https://www.ki-salon.net/), who is a strong supporter of open-source AI.
 We have built the functionality on top of the official [xLSTM](https://github.com/NX-AI/xlstm) project.
 
-## Get in touch
+## Get in touch and get involved
 
 Do not hesitate to report any issues that you might find [here](https://github.com/AI-Guru/helibrunna/issues). Of course, do not hesitate to connect on [LinkedIn](https://de.linkedin.com/in/dr-tristan-behrens-734967a2) and say hello.
+
+If you want to contribute, please fork the repository and send pull requests. Looking forward!
 
 ## Features
 
@@ -41,6 +43,7 @@ These features are planned:
 
 ## Known issues
 
+None so far.
 
 ## Setting up things
 

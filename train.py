@@ -20,6 +20,7 @@ from datasets import load_dataset
 import json
 from omegaconf import OmegaConf
 import shutil
+from tqdm import tqdm
 from safetensors.torch import save_file
 from tokenizers import Tokenizer
 from tokenizers.models import WordLevel
@@ -29,6 +30,7 @@ from torch.utils.data import DataLoader
 from transformers import DataCollatorForLanguageModeling
 from transformers import PreTrainedTokenizerFast
 from xlstm.xlstm_lm_model import xLSTMLMModel, xLSTMLMModelConfig
+from source.utilities import display_logo
 
 # Import the LinearWarmupCosineAnnealing scheduler from the experiments module.
 # Source: https://github.com/NX-AI/xlstm/tree/main
@@ -40,6 +42,8 @@ if not os.path.exists("experiments/lr_scheduler.py"):
 from experiments.lr_scheduler import LinearWarmupCosineAnnealing
 
 
+os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
+
 def run_training(config_path: str):
     """
     Run the training process based on the provided configuration file.
@@ -50,6 +54,9 @@ def run_training(config_path: str):
     Returns:
         None
     """
+
+    # Display the logo.
+    display_logo()
 
     # Initialize the accelerator.
     print("Initializing accelerator...")
@@ -82,19 +89,28 @@ def run_training(config_path: str):
     print(raw_datasets)
 
     # Get the tokenizer.
+    vocab_size = 0
     if config.tokenizer.type == "whitespace":
         print("Training whitespace tokenizer...")
         tokenizer = train_whitespace_tokenizer(raw_datasets)
+        vocab_size = tokenizer.get_vocab_size()
     elif config.tokenizer.type == "pretrained":
         tokenizer_id = config.tokenizer.pretrained_id
         print(f"Loading pre-trained tokenizer: {tokenizer_id}...")
-        tokenizer = PreTrainedTokenizerFast(tokenizer_id)
+        from transformers import AutoTokenizer
+        tokenizer = AutoTokenizer.from_pretrained(tokenizer_id)
+        vocab_size = tokenizer.vocab_size
+        print(f"Vocabulary size: {vocab_size:_}")
+        if tokenizer.pad_token is None:
+            tokenizer.add_special_tokens({'pad_token': '[PAD]'})
+            vocab_size += 1
     else:
         raise ValueError(f"Unknown tokenizer type: {tokenizer.type}")
-    print(f"Vocabulary size: {tokenizer.vocab_size}")
+    print(f"Vocabulary size: {vocab_size:_}")
 
     # Assign the vocabulary size to the model configuration.
-    config.model.vocab_size = tokenizer.vocab_size
+    assert vocab_size > 0
+    config.model.vocab_size = vocab_size
 
     # Get the context length.
     context_length = config.model.context_length
@@ -155,6 +171,10 @@ def run_training(config_path: str):
         collate_fn=data_collator
     )
 
+    # Estimate the number of steps.
+    num_steps = config.training.num_epochs * len(tokenized_datasets["train"]) // config.training.batch_size
+    print(f"Estimated number of steps: {num_steps:_}")
+
     # Prepare the optimizer and learning rate scheduler.
     optimizer_groups = model._create_weight_decay_optim_groups()
     optimizer = torch.optim.AdamW(
@@ -167,7 +187,7 @@ def run_training(config_path: str):
     lr_scheduler = LinearWarmupCosineAnnealing(
         optimizer,
         config.training.lr_warmup_steps,
-        config.training.lr_decay_until_steps,
+        config.training.lr_decay_until_steps if config.training.lr_decay_until_steps != "auto" else num_steps,
         config.training.lr,
         config.training.lr_decay_factor * config.training.lr,
     )
@@ -219,7 +239,10 @@ def run_training(config_path: str):
         "lr": [],
         "step": [],
     }
-    # TODO: Use steps from config.
+
+    # Add a green progress bar.
+    progress_bar = tqdm(total=num_steps, desc="Training", unit="step", colour="GREEN")
+
     for epoch in range(num_epochs):
         for batch in train_dataloader:
 
@@ -249,6 +272,8 @@ def run_training(config_path: str):
                 optimizer.step()
                 lr_scheduler.step()
                 running_loss.append(loss.item())
+            
+            # Next step.
             step += 1
 
             # Save every step.
@@ -258,23 +283,29 @@ def run_training(config_path: str):
 
             # Log every step.
             if step % log_every_step == 0 and step > 0 and log_every_step > 0:
+                
+                # Update the log.
                 average_loss = sum(running_loss) / len(running_loss)
                 last_lr = lr_scheduler.get_last_lr()[0]
                 history["loss"].append(average_loss)
                 history["lr"].append(last_lr)
                 history["step"].append(step)
                 running_loss = []
+
+                # Log to wandb.
                 if wandb_project is not None:
                     wandb.log({"loss": average_loss, "lr": last_lr, "step": step})
+                
+                # Log to tensorboard.
                 if tensorboard_dir is not None:
                     writer.add_scalar("loss", average_loss, step)
                     writer.add_scalar("lr", last_lr, step)
                     writer.add_scalar("step", step, step)
                     writer.flush()
-                print(f"Step {step} completed. Loss: {average_loss}, LR: {last_lr}")
 
-            #train_metrics.update(outputs, labels)
-        print(f'Epoch {epoch + 1}/{num_epochs} completed. Loss: {loss.item()}')
+                # Update the progressbar. Use the step as the total. Also display the loss and lr.
+                progress_bar.set_postfix({"loss": average_loss, "lr": last_lr})
+                progress_bar.update(log_every_step)
 
     # Print some information.
     print(f"Training completed. Epochs: {epoch}, Steps: {step}")

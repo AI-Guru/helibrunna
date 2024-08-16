@@ -18,6 +18,8 @@ from dacite import from_dict
 import torch
 from safetensors.torch import load_file
 import time
+from source.utilities import display_logo
+
 
 def generate(
         model_path_or_repo: str,
@@ -39,6 +41,9 @@ def generate(
     Returns:
         None
     """
+
+    # Display the logo.
+    display_logo()
 
     # Set the device.
     device = "cuda" if torch.cuda.is_available() else "cpu"
