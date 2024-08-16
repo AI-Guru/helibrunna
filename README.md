@@ -122,6 +122,13 @@ There is also another config file that upcycles the GPT2 tokenizer and trains an
 python train.py configs/lovecraft.yaml
 ```
 
+## Training with Accelerate
+
+```
+accelerate config
+accelerate launch train.py configs/musicxlstm.yaml
+```
+
 
 ## Running inference
 

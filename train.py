@@ -60,13 +60,6 @@ def run_training(config_path: str):
         None
     """
 
-    # Display the logo.
-    display_logo()
-
-    # Initialize the accelerator.
-    print("Initializing accelerator...")
-    accelerator = Accelerator()
-
     # Load the configuration.
     if not os.path.exists(config_path):
         raise FileNotFoundError(f"Config file not found: {config_path}")
@@ -74,6 +67,15 @@ def run_training(config_path: str):
         config_yaml = f.read()
     config = OmegaConf.create(config_yaml)
     OmegaConf.resolve(config)
+
+    # Initialize the accelerator.
+    accelerator = Accelerator(
+        log_with="wandb" if "wandb_project" in config.training else None,
+    )
+
+    # Display the logo.
+    if accelerator.is_local_main_process:
+        display_logo()
 
     # Set log every step to save every step.
     if "log_every_step" not in config.training:
@@ -85,33 +87,33 @@ def run_training(config_path: str):
     run_dir = "run_" + datetime.datetime.now().strftime("%Y%m%d-%H%M")
     output_dir = os.path.join(config.training.output_dir, run_dir)
     os.makedirs(output_dir, exist_ok=True)
-    print(f"Output directory: {output_dir}")
+    accelerator.print(f"Output directory: {output_dir}")
 
     # Load the dataset.
     hugging_face_id = config.dataset.hugging_face_id
-    print(f"Loading dataset: {hugging_face_id}")
+    accelerator.print(f"Loading dataset: {hugging_face_id}")
     raw_datasets = load_dataset(hugging_face_id)
-    print(raw_datasets)
+    accelerator.print(raw_datasets)
 
     # Get the tokenizer.
     vocab_size = 0
     if config.tokenizer.type == "whitespace":
-        print("Training whitespace tokenizer...")
+        accelerator.print("Training whitespace tokenizer...")
         tokenizer = train_whitespace_tokenizer(raw_datasets)
-        vocab_size = tokenizer.get_vocab_size()
+        vocab_size = tokenizer.vocab_size
     elif config.tokenizer.type == "pretrained":
         tokenizer_id = config.tokenizer.pretrained_id
-        print(f"Loading pre-trained tokenizer: {tokenizer_id}...")
+        accelerator.print(f"Loading pre-trained tokenizer: {tokenizer_id}...")
         from transformers import AutoTokenizer
         tokenizer = AutoTokenizer.from_pretrained(tokenizer_id)
         vocab_size = tokenizer.vocab_size
-        print(f"Vocabulary size: {vocab_size:_}")
+        accelerator.print(f"Vocabulary size: {vocab_size:_}")
         if tokenizer.pad_token is None:
             tokenizer.add_special_tokens({'pad_token': '[PAD]'})
             vocab_size += 1
     else:
         raise ValueError(f"Unknown tokenizer type: {tokenizer.type}")
-    print(f"Vocabulary size: {vocab_size:_}")
+    accelerator.print(f"Vocabulary size: {vocab_size:_}")
 
     # Assign the vocabulary size to the model configuration.
     assert vocab_size > 0
@@ -137,21 +139,21 @@ def run_training(config_path: str):
     assert list(tokenized.keys()) == ["input_ids"], list(tokenized.keys())
 
     # Tokenize the datasets.
-    print("Tokenizing datasets...")
+    accelerator.print("Tokenizing datasets...")
     tokenized_datasets = raw_datasets.map(tokenize_function, batched=True, remove_columns=raw_datasets["train"].column_names)
 
     # Check a sample.
     sample = raw_datasets["train"][0]
     tokenized = tokenized_datasets["train"][0]
     assert list(tokenized.keys()) == ["input_ids"], list(tokenized.keys())
-    print(f"Original text: {sample}")
-    print(f"Tokenized text: {tokenized}")
+    accelerator.print(f"Original text: {sample}")
+    accelerator.print(f"Tokenized text: {tokenized}")
         
     # Create the data collator.
     data_collator = DataCollatorForLanguageModeling(tokenizer, mlm=False)
 
     # Create the model.
-    print("Creating model...")
+    accelerator.print("Creating model...")
     model = xLSTMLMModel(from_dict(xLSTMLMModelConfig, OmegaConf.to_container(config.model))).to(
         device=accelerator.device
     )
@@ -160,15 +162,15 @@ def run_training(config_path: str):
     # Apply precision.
     training_dtype = get_torch_dtype(config.training.weight_precision)
     model = model.to(dtype=training_dtype)
-    print(f"Training dtype: {training_dtype}")
+    accelerator.print(f"Training dtype: {training_dtype}")
 
     # Print the model.
-    print(model)
+    accelerator.print(model)
     num_params = sum(p.numel() for p in model.parameters())
-    print(f"Number of parameters: {num_params:_}")
+    accelerator.print(f"Number of parameters: {num_params:_}")
 
     # Prepare the DataLoader from the tokenized dataset.
-    print("Preparing DataLoader...")
+    accelerator.print("Preparing DataLoader...")
     train_dataloader = DataLoader(
         tokenized_datasets["train"],
         batch_size=config.training.batch_size,
@@ -178,7 +180,8 @@ def run_training(config_path: str):
 
     # Estimate the number of steps.
     num_steps = config.training.num_epochs * len(tokenized_datasets["train"]) // config.training.batch_size
-    print(f"Estimated number of steps: {num_steps:_}")
+    num_steps = num_steps // accelerator.num_processes
+    accelerator.print(f"Estimated number of steps: {num_steps:_}")
 
     # Prepare the optimizer and learning rate scheduler.
     optimizer_groups = model._create_weight_decay_optim_groups()
@@ -207,7 +210,6 @@ def run_training(config_path: str):
     enable_mixed_precision = config.training.enable_mixed_precision
     vocab_size = config.model.vocab_size
     wandb_project = config.training.get("wandb_project", None)
-    tensorboard_dir = config.training.get("tensorboard_dir", None)
 
     # Get a subset of the config that includes only the model.
     model_config = OmegaConf.select(config, "model")
@@ -223,18 +225,13 @@ def run_training(config_path: str):
     # Save the tokenizer.
     tokenizer.save_pretrained(output_dir)
 
-    # Enable wandb if requested.
     if wandb_project is not None:
-        print(f"Enabling wandb logging for project: {wandb_project}")
-        import wandb
-        wandb.init(project=wandb_project, name=run_dir)
-
-    # Enable tensorboard if requested.
-    if tensorboard_dir is not None:
-        tensorboard_dir = os.path.join(output_dir, tensorboard_dir)
-        print(f"Enabling tensorboard logging in directory: {tensorboard_dir}")
-        from torch.utils.tensorboard import SummaryWriter
-        writer = SummaryWriter(tensorboard_dir)
+        accelerator.print(f"Enabling wandb logging for project: {wandb_project}")
+        accelerator.init_trackers(
+            project_name=wandb_project, 
+            config=OmegaConf.to_container(model_config),
+            init_kwargs={"wandb": {"name": run_dir}}
+        )
 
     # Training loop.
     step = 0
@@ -273,7 +270,7 @@ def run_training(config_path: str):
                     labels.view(-1),
                     ignore_index=-1,
                 )
-                loss.backward()
+                accelerator.backward(loss)
                 optimizer.step()
                 lr_scheduler.step()
                 running_loss.append(loss.item())
@@ -284,7 +281,8 @@ def run_training(config_path: str):
             # Save every step.
             if step % save_every_step == 0 and step > 0 and save_every_step > 0:
                 checkpoint_dir = os.path.join(output_dir, f"checkpoint-{step}")
-                save_model(model, model_config, checkpoint_dir)
+                accelerator.wait_for_everyone()
+                save_model(accelerator.unwrap_model(model), model_config, checkpoint_dir)
 
             # Log every step.
             if step % log_every_step == 0 and step > 0 and log_every_step > 0:
@@ -299,21 +297,19 @@ def run_training(config_path: str):
 
                 # Log to wandb.
                 if wandb_project is not None:
-                    wandb.log({"loss": average_loss, "lr": last_lr, "step": step})
+                    accelerator.log({"loss": average_loss, "lr": last_lr}, step=step)
                 
-                # Log to tensorboard.
-                if tensorboard_dir is not None:
-                    writer.add_scalar("loss", average_loss, step)
-                    writer.add_scalar("lr", last_lr, step)
-                    writer.add_scalar("step", step, step)
-                    writer.flush()
-
                 # Update the progressbar. Use the step as the total. Also display the loss and lr.
                 progress_bar.set_postfix({"loss": average_loss, "lr": last_lr})
                 progress_bar.update(log_every_step)
 
+    # End training.
+    progress_bar.close()
+    accelerator.wait_for_everyone()
+    accelerator.end_training()
+
     # Print some information.
-    print(f"Training completed. Epochs: {epoch}, Steps: {step}")
+    accelerator.print(f"Training completed. Epochs: {epoch}, Steps: {step}")
 
     # Save the last model.
     checkpoint_dir = os.path.join(output_dir, f"checkpoint-{step}-last")
@@ -323,22 +319,6 @@ def run_training(config_path: str):
     history_path = os.path.join(output_dir, "history.json")
     with open(history_path, "w") as f:
         json.dump(history, f)
-
-    # Plot the loss.
-    plt.plot(history["loss"])
-    plt.xlabel("Epoch")
-    plt.ylabel("Loss")
-    plt.tight_layout()
-    plt.savefig(os.path.join(output_dir, "loss.png"))
-    plt.close()
-
-    # Plot the learning rate.
-    plt.plot(history["lr"])
-    plt.xlabel("Epoch")
-    plt.ylabel("Learning Rate")
-    plt.tight_layout()
-    plt.savefig(os.path.join(output_dir, "lr.png"))
-    plt.close()
 
 
 def train_whitespace_tokenizer(raw_datasets):
