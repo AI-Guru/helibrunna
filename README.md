@@ -1,7 +1,7 @@
 # Helibrunna
 ## A Hugging Face compatible xLSTM trainer by Dr. Tristan Behrens
 
-![](assets/helibrunna.jpg)
+![](assets/helibrunna02.jpg)
 
 
 ## Acknowledgements
@@ -28,6 +28,7 @@ These features are currently implemented:
 - Distributed training [Accelerate](https://huggingface.co/docs/accelerate/index) (untested).
 - Basic model inference with temperature sampling.
 - Uploading to Hugging Face.
+- Downloading from Hugging Face.
 
 These features are planned:
 
@@ -35,7 +36,6 @@ These features are planned:
 - Fine-tuning.
 - Fine-tuning with LoRA adapters.
 - Quantization.
-- Downloading from Hugging Face.
 - Training on a GPT2-size dataset, such as openwebtext.
 
 
