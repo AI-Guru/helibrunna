@@ -9,6 +9,16 @@ This is how ChatGPT describes the project:
 
 Nice!
 
+
+## License Overview
+
+This project is licensed under the GNU Affero General Public License (AGPL) version 3. We have chosen this license to maintain consistency with the xLSTM project, which is also licensed under the AGPL. 
+
+The AGPL is specifically designed to ensure that any modifications to the code, especially when deployed in a networked environment, are shared with the community. This aligns with the principles of the xLSTM project, promoting open collaboration and ensuring that improvements remain freely accessible to all users.
+
+For more details on the license, please see the [LICENSE](./LICENSE) file.
+
+
 ## Acknowledgements
 
 This repository is dedicated to my second hometown [Heilbronn](https://www.heilbronn.de/startseite.html), who has become one of the most creative AI hubs in Germany.
