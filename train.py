@@ -20,11 +20,12 @@ import matplotlib.pyplot as plt
 import torch
 from accelerate import Accelerator
 from dacite import from_dict
-from datasets import load_dataset
+from datasets import load_dataset, load_from_disk
 import json
 from omegaconf import OmegaConf
 import shutil
 import sys
+import time
 from tqdm import tqdm
 from safetensors.torch import save_file
 from tokenizers import Tokenizer
@@ -99,68 +100,8 @@ def run_training(config_path: str):
     if "save_every_step" not in config.training:
         config.training.save_every_step = -1
 
-    # Load the dataset.
-    hugging_face_id = config.dataset.hugging_face_id
-    accelerator.print(f"Loading dataset: {hugging_face_id}")
-    raw_datasets = load_dataset(hugging_face_id)
-    accelerator.print(raw_datasets)
-
-    # Get the tokenizer.
-    vocab_size = 0
-    if config.tokenizer.type == "whitespace":
-        accelerator.print("Training whitespace tokenizer...")
-        tokenizer = train_whitespace_tokenizer(raw_datasets)
-        vocab_size = tokenizer.vocab_size
-    elif config.tokenizer.type == "pretrained":
-        tokenizer_id = config.tokenizer.pretrained_id
-        accelerator.print(f"Loading pre-trained tokenizer: {tokenizer_id}...")
-        from transformers import AutoTokenizer
-        tokenizer = AutoTokenizer.from_pretrained(tokenizer_id)
-        vocab_size = tokenizer.vocab_size
-        if tokenizer.pad_token is None:
-            tokenizer.add_special_tokens({'pad_token': '[PAD]'})
-            vocab_size += 1
-    else:
-        raise ValueError(f"Unknown tokenizer type: {tokenizer.type}")
-    accelerator.print(f"Vocabulary size: {vocab_size:_}")
-
-    # Assign the vocabulary size to the model configuration.
-    assert vocab_size > 0
-    config.model.vocab_size = vocab_size
-
-    # Get the context length.
-    context_length = config.model.context_length
-
-    # Prepare the tokenized datasets.
-    def tokenize_function(example):
-        tokenized_example = tokenizer(
-            example["text"],
-            truncation=True,
-            padding=False,
-            max_length=context_length,
-        ) 
-        return {
-            "input_ids": tokenized_example["input_ids"]
-        } 
-
-    # Check a sample.
-    tokenized = tokenize_function(raw_datasets["train"][0])
-    assert list(tokenized.keys()) == ["input_ids"], list(tokenized.keys())
-
-    # Tokenize the datasets.
-    accelerator.print("Tokenizing datasets...")
-    tokenized_datasets = raw_datasets.map(
-        tokenize_function, 
-        batched=True,
-        remove_columns=raw_datasets["train"].column_names
-    )
-
-    # Check a sample.
-    sample = raw_datasets["train"][0]
-    tokenized = tokenized_datasets["train"][0]
-    assert list(tokenized.keys()) == ["input_ids"], list(tokenized.keys())
-    accelerator.print(f"Original text: {sample}")
-    accelerator.print(f"Tokenized text: {tokenized}")
+    # Preprocess the dataset and tokenizer.
+    tokenized_datasets, tokenizer = preprocess(config, accelerator)
         
     # Create the data collator.
     data_collator = DataCollatorForLanguageModeling(tokenizer, mlm=False)
@@ -495,6 +436,113 @@ def create_readme(output_dir, config):
         raise FileNotFoundError(f"Banner not found: {banner_path}")
     banner_target_path = os.path.join(output_dir, "banner.jpg")
     shutil.copy(banner_path, banner_target_path)
+
+def preprocess(config, accelerator):
+    """
+    Preprocess the dataset and tokenizer. Only the main process should perform this task.
+    
+    Args:
+        config (OmegaConf): The configuration object.
+        accelerator (Accelerator): The Accelerator instance.
+    
+    Returns:
+        datasets.DatasetDict: The tokenized datasets.
+        PreTrainedTokenizerFast: The tokenizer.
+    """
+
+    print(config)
+
+    # Load the dataset.
+    hugging_face_id = config.dataset.hugging_face_id
+    model_name = config.training.model_name
+    data_path = f"./preprocessed/{model_name}/data"
+    tokenizer_path = f"./preprocessed/{model_name}/tokenizer"
+    tokenized_data_path = f"./preprocessed/{model_name}/tokenized_datasets"
+
+    if accelerator.is_local_main_process:
+        accelerator.print(f"Loading dataset: {hugging_face_id}")
+        raw_datasets = load_dataset(hugging_face_id)
+
+        # Save the dataset to disk to be reused by other processes.
+        raw_datasets.save_to_disk(data_path)
+        accelerator.print("Dataset downloaded and saved.")
+    else:
+        # Other processes wait for the dataset to be downloaded and saved.
+        while not os.path.exists(data_path):
+            time.sleep(1)
+        raw_datasets = load_dataset(data_path)
+    
+    accelerator.wait_for_everyone()
+
+    # Tokenizer creation.
+    vocab_size = 0
+    if config.tokenizer.type == "whitespace":
+        if accelerator.is_local_main_process:
+            accelerator.print("Training whitespace tokenizer...")
+            tokenizer = train_whitespace_tokenizer(raw_datasets)
+            tokenizer.save_pretrained(tokenizer_path)
+            vocab_size = tokenizer.vocab_size
+        else:
+            while not os.path.exists(f"{tokenizer_path}/tokenizer.json"):
+                time.sleep(1)
+            tokenizer = PreTrainedTokenizerFast.from_pretrained(tokenizer_path)
+            vocab_size = tokenizer.vocab_size
+    elif config.tokenizer.type == "pretrained":
+        from transformers import AutoTokenizer
+        tokenizer_id = config.tokenizer.pretrained_id
+        accelerator.print(f"Loading pre-trained tokenizer: {tokenizer_id}...")
+        tokenizer = AutoTokenizer.from_pretrained(tokenizer_id)
+        vocab_size = tokenizer.vocab_size
+        if tokenizer.pad_token is None:
+            tokenizer.add_special_tokens({'pad_token': '[PAD]'})
+            vocab_size += 1
+    else:
+        raise ValueError(f"Unknown tokenizer type: {config.tokenizer.type}")
+    
+    accelerator.wait_for_everyone()
+
+    # Assign the vocabulary size to the model configuration.
+    assert vocab_size > 0
+    config.model.vocab_size = vocab_size
+
+    # Tokenize the datasets.
+    def tokenize_function(example):
+        tokenized_example = tokenizer(
+            example["text"],
+            truncation=True,
+            padding=False,
+            max_length=config.model.context_length,
+        ) 
+        return {
+            "input_ids": tokenized_example["input_ids"]
+        } 
+
+    if accelerator.is_local_main_process:
+        accelerator.print("Tokenizing datasets...")
+        tokenized_datasets = raw_datasets.map(
+            tokenize_function, 
+            batched=True,
+            remove_columns=raw_datasets["train"].column_names,
+            num_proc=accelerator.num_processes,
+        )
+        tokenized_datasets.save_to_disk(tokenized_data_path)
+    else:
+        while not os.path.exists(tokenized_data_path):
+            time.sleep(1)
+        tokenized_datasets = load_from_disk(tokenized_data_path)
+
+    accelerator.wait_for_everyone()
+
+    # Check a sample.
+    if accelerator.is_local_main_process:
+        accelerator.print("Sample tokenized text:")
+        sample = raw_datasets["train"][0]
+        tokenized = tokenized_datasets["train"][0]
+        assert list(tokenized.keys()) == ["input_ids"], list(tokenized.keys())
+        accelerator.print(f"Original text: {sample}")
+        accelerator.print(f"Tokenized text: {tokenized}")
+
+    return tokenized_datasets, tokenizer
 
 
 # Run the training.
