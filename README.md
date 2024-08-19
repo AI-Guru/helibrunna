@@ -98,6 +98,13 @@ pip install -r requirements.txt
 
 Then you should be ready to go!
 
+## Dataset Preprocessing
+
+Usually the dateset preprocessing happens very early when you start a training. Some datasets might require you to preprocess in a separate step. This is how you can do it:
+
+```
+python train.py preprocess configs/musicxlstm.yaml
+```
 
 ## Training xLSTM
 

@@ -23,6 +23,7 @@ from dacite import from_dict
 from datasets import load_dataset, load_from_disk
 import json
 from omegaconf import OmegaConf
+import multiprocessing
 import shutil
 import sys
 import time
@@ -62,13 +63,7 @@ def run_training(config_path: str):
     """
 
     # Load the configuration.
-    if not os.path.exists(config_path):
-        raise FileNotFoundError(f"Config file not found: {config_path}")
-    with open(config_path, "r") as f:
-        config_yaml = f.read()
-    config = OmegaConf.create(config_yaml)
-    OmegaConf.resolve(config)
-    validate_config(config)
+    config = load_config(config_path)
 
     # Specify the output_dir.
     run_dir = "run_" + datetime.datetime.now().strftime("%Y%m%d-%H%M")
@@ -102,6 +97,10 @@ def run_training(config_path: str):
 
     # Preprocess the dataset and tokenizer.
     tokenized_datasets, tokenizer = preprocess(config, accelerator)
+
+    # Get the vocabulary size.
+    vocab_size = tokenizer.vocab_size
+    config.model.vocab_size = vocab_size
         
     # Create the data collator.
     data_collator = DataCollatorForLanguageModeling(tokenizer, mlm=False)
@@ -163,8 +162,9 @@ def run_training(config_path: str):
     log_every_step = config.training.log_every_step
     num_epochs = config.training.num_epochs
     enable_mixed_precision = config.training.enable_mixed_precision
-    vocab_size = config.model.vocab_size
     wandb_project = config.training.get("wandb_project", None)
+
+  
 
     # Get a subset of the config that includes only the model.
     model_config = OmegaConf.select(config, "model")
@@ -273,12 +273,35 @@ def run_training(config_path: str):
 
     # Save the last model.
     checkpoint_dir = os.path.join(output_dir, f"checkpoint-{step}-last")
-    save_model(model, model_config, checkpoint_dir)
+    accelerator.wait_for_everyone()
+    save_model(accelerator.unwrap_model(model), model_config, checkpoint_dir)
 
     # Save the history as JSON.
     history_path = os.path.join(output_dir, "history.json")
     with open(history_path, "w") as f:
         json.dump(history, f)
+
+
+def load_config(config_path: str) -> OmegaConf:
+    """
+    Load the configuration from the specified path.
+    Args:
+        config_path (str): The path to the configuration file.
+
+    Raises:
+        FileNotFoundError: If the configuration file is not found.
+    Returns:
+        OmegaConf: The configuration object.
+    """
+    
+    if not os.path.exists(config_path):
+        raise FileNotFoundError(f"Config file not found: {config_path}")
+    with open(config_path, "r") as f:
+        config_yaml = f.read()
+    config = OmegaConf.create(config_yaml)
+    OmegaConf.resolve(config)
+    validate_config(config)
+    return config
 
 
 def train_whitespace_tokenizer(raw_datasets):
@@ -437,7 +460,19 @@ def create_readme(output_dir, config):
     banner_target_path = os.path.join(output_dir, "banner.jpg")
     shutil.copy(banner_path, banner_target_path)
 
-def preprocess(config, accelerator):
+
+def preprocess_only(config_path):
+
+    # Load the configuration.
+    config = load_config(config_path)
+
+    # Initialize the accelerator.
+    accelerator = Accelerator()
+
+    _ = preprocess(config, accelerator, ask_for_overwrite=True)
+
+
+def preprocess(config, accelerator=None, ask_for_overwrite=False):
     """
     Preprocess the dataset and tokenizer. Only the main process should perform this task.
     
@@ -450,8 +485,6 @@ def preprocess(config, accelerator):
         PreTrainedTokenizerFast: The tokenizer.
     """
 
-    print(config)
-
     # Load the dataset.
     hugging_face_id = config.dataset.hugging_face_id
     model_name = config.training.model_name
@@ -459,6 +492,23 @@ def preprocess(config, accelerator):
     tokenizer_path = f"./preprocessed/{model_name}/tokenizer"
     tokenized_data_path = f"./preprocessed/{model_name}/tokenized_datasets"
 
+    # If tokenizer and tokenized datasets exist, and ask_for_overwrite is True, ask for overwrite.
+    if os.path.exists(tokenizer_path) and os.path.exists(tokenized_data_path) and ask_for_overwrite:
+        overwrite = input("Preprocessed data already exists. Overwrite? [y/n]: ")
+        if overwrite.lower() == "y":
+            accelerator.print("Deleting existing preprocessed data...")
+            shutil.rmtree(data_path)
+            shutil.rmtree(tokenizer_path)
+            shutil.rmtree(tokenized_data_path)
+
+    # If tokenizer and tokenized datasets exist, load them.
+    if os.path.exists(tokenizer_path) and os.path.exists(tokenized_data_path):
+        accelerator.print("Loading preprocessed data...")
+        tokenizer = PreTrainedTokenizerFast.from_pretrained(tokenizer_path)
+        tokenized_datasets = load_from_disk(tokenized_data_path)
+        return tokenized_datasets, tokenizer
+
+    # Download the dataset.
     if accelerator.is_local_main_process:
         accelerator.print(f"Loading dataset: {hugging_face_id}")
         raw_datasets = load_dataset(hugging_face_id)
@@ -475,7 +525,6 @@ def preprocess(config, accelerator):
     accelerator.wait_for_everyone()
 
     # Tokenizer creation.
-    vocab_size = 0
     if config.tokenizer.type == "whitespace":
         if accelerator.is_local_main_process:
             accelerator.print("Training whitespace tokenizer...")
@@ -489,21 +538,29 @@ def preprocess(config, accelerator):
             vocab_size = tokenizer.vocab_size
     elif config.tokenizer.type == "pretrained":
         from transformers import AutoTokenizer
-        tokenizer_id = config.tokenizer.pretrained_id
-        accelerator.print(f"Loading pre-trained tokenizer: {tokenizer_id}...")
-        tokenizer = AutoTokenizer.from_pretrained(tokenizer_id)
-        vocab_size = tokenizer.vocab_size
-        if tokenizer.pad_token is None:
-            tokenizer.add_special_tokens({'pad_token': '[PAD]'})
-            vocab_size += 1
+        if accelerator.is_local_main_process:
+            tokenizer_id = config.tokenizer.pretrained_id
+            accelerator.print(f"Loading pre-trained tokenizer: {tokenizer_id}...")
+            tokenizer = AutoTokenizer.from_pretrained(tokenizer_id)
+            if tokenizer.pad_token is None and "GPT2TokenizerFast" in str(type(tokenizer)):
+                tokenizer.pad_token = tokenizer.eos_token
+            else:
+                #tokenizer.add_tokens("[PAD]")
+                #tokenizer.add_special_tokens({'pad_token': '[PAD]'})
+                assert False, f"Tokenizer type not supported: {type(tokenizer)}"
+            tokenizer.save_pretrained(tokenizer_path)
+        else:
+            while not os.path.exists(f"{tokenizer_path}/tokenizer_config.json"):
+                time.sleep(1)
+            tokenizer = PreTrainedTokenizerFast.from_pretrained(tokenizer_path)
     else:
         raise ValueError(f"Unknown tokenizer type: {config.tokenizer.type}")
     
     accelerator.wait_for_everyone()
 
     # Assign the vocabulary size to the model configuration.
-    assert vocab_size > 0
-    config.model.vocab_size = vocab_size
+    #assert vocab_size > 0
+    #config.model.vocab_size = vocab_size
 
     # Tokenize the datasets.
     def tokenize_function(example):
@@ -523,7 +580,7 @@ def preprocess(config, accelerator):
             tokenize_function, 
             batched=True,
             remove_columns=raw_datasets["train"].column_names,
-            num_proc=accelerator.num_processes,
+            num_proc=multiprocessing.cpu_count()
         )
         tokenized_datasets.save_to_disk(tokenized_data_path)
     else:
@@ -547,5 +604,9 @@ def preprocess(config, accelerator):
 
 # Run the training.
 if __name__ == "__main__":
-    config_path = sys.argv[1]
-    run_training(config_path)
+    if sys.argv[1] == "preprocess":
+        config_path = sys.argv[2]
+        preprocess_only(config_path)
+    else:
+        config_path = sys.argv[1]
+        run_training(config_path)
