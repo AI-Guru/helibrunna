@@ -35,7 +35,7 @@ from torch.utils.data import DataLoader
 from transformers import DataCollatorForLanguageModeling
 from transformers import PreTrainedTokenizerFast
 from xlstm.xlstm_lm_model import xLSTMLMModel, xLSTMLMModelConfig
-from source.utilities import display_logo
+from source.utilities import display_logo, validate_config
 
 # Import the LinearWarmupCosineAnnealing scheduler from the experiments module.
 # Source: https://github.com/NX-AI/xlstm/tree/main
@@ -67,6 +67,7 @@ def run_training(config_path: str):
         config_yaml = f.read()
     config = OmegaConf.create(config_yaml)
     OmegaConf.resolve(config)
+    validate_config(config)
 
     # Specify the output_dir.
     run_dir = "run_" + datetime.datetime.now().strftime("%Y%m%d-%H%M")
