@@ -16,7 +16,6 @@
 
 import datetime
 import os
-import fire
 import matplotlib.pyplot as plt
 import torch
 from accelerate import Accelerator
@@ -25,6 +24,7 @@ from datasets import load_dataset
 import json
 from omegaconf import OmegaConf
 import shutil
+import sys
 from tqdm import tqdm
 from safetensors.torch import save_file
 from tokenizers import Tokenizer
@@ -76,7 +76,6 @@ def run_training(config_path: str):
     loggers = []
     if "wandb_project" in config.training and config.training.wandb_project is not None and config.training.wandb_project != "":
         loggers.append("wandb")
-    print(f"Loggers: {loggers}")
 
     # Initialize the accelerator.
     accelerator = Accelerator(
@@ -491,4 +490,5 @@ def create_readme(output_dir, config):
 
 # Run the training.
 if __name__ == "__main__":
-    fire.Fire(run_training)
+    config_path = sys.argv[1]
+    run_training(config_path)
