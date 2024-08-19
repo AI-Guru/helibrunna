@@ -35,7 +35,7 @@ from torch.utils.data import DataLoader
 from transformers import DataCollatorForLanguageModeling
 from transformers import PreTrainedTokenizerFast
 from xlstm.xlstm_lm_model import xLSTMLMModel, xLSTMLMModelConfig
-from source.utilities import display_logo, validate_config
+from source.utilities import display_logo, validate_config, human_readable_number
 
 # Import the LinearWarmupCosineAnnealing scheduler from the experiments module.
 # Source: https://github.com/NX-AI/xlstm/tree/main
@@ -149,7 +149,11 @@ def run_training(config_path: str):
 
     # Tokenize the datasets.
     accelerator.print("Tokenizing datasets...")
-    tokenized_datasets = raw_datasets.map(tokenize_function, batched=True, remove_columns=raw_datasets["train"].column_names)
+    tokenized_datasets = raw_datasets.map(
+        tokenize_function, 
+        batched=True,
+        remove_columns=raw_datasets["train"].column_names
+    )
 
     # Check a sample.
     sample = raw_datasets["train"][0]
@@ -176,8 +180,9 @@ def run_training(config_path: str):
     # Print the model.
     accelerator.print(model)
     num_params = sum(p.numel() for p in model.parameters())
-    accelerator.print(f"Number of parameters: {num_params:_}")
-
+    num_params_human = human_readable_number(num_params)
+    accelerator.print(f"Number of parameters: {num_params:_} ({num_params_human})")
+    
     # Prepare the DataLoader from the tokenized dataset.
     accelerator.print("Preparing DataLoader...")
     train_dataloader = DataLoader(
@@ -238,6 +243,9 @@ def run_training(config_path: str):
     if wandb_project is not None:
         accelerator.print(f"Enabling wandb logging for project: {wandb_project}")
         config_dict = OmegaConf.to_container(model_config)
+        # Add num_params to the config.
+        config_dict["num_params"] = num_params
+        config_dict["num_params_human"] = num_params_human
         accelerator.init_trackers(
             project_name=wandb_project, 
             config=config_dict,

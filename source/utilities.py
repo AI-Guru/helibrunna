@@ -85,3 +85,11 @@ config_schema = {
 def validate_config(config: DictConfig):
     config = OmegaConf.to_container(config, resolve=True)
     validate_dict(config, config_schema, parent_key='')
+
+
+def human_readable_number(num):
+    for unit in ['', 'K', 'M', 'B', 'T']:
+        if abs(num) < 1000.0:
+            return f"{num:3.1f}{unit}"
+        num /= 1000.0
+    return f"{num:.1f}P"  # For numbers larger than 1T
