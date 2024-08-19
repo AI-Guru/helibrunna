@@ -68,26 +68,36 @@ def run_training(config_path: str):
     config = OmegaConf.create(config_yaml)
     OmegaConf.resolve(config)
 
+    # Specify the output_dir.
+    run_dir = "run_" + datetime.datetime.now().strftime("%Y%m%d-%H%M")
+    output_dir = os.path.join(config.training.output_dir, run_dir)
+
+    # Initialize the loggers.
+    loggers = []
+    if "wandb_project" in config.training and config.training.wandb_project is not None and config.training.wandb_project != "":
+        loggers.append("wandb")
+    print(f"Loggers: {loggers}")
+
     # Initialize the accelerator.
     accelerator = Accelerator(
-        log_with="wandb" if "wandb_project" in config.training else None,
+        log_with=loggers,
+        project_dir=output_dir,
     )
 
     # Display the logo.
     if accelerator.is_local_main_process:
         display_logo()
 
+    # Create the output directory.
+    if accelerator.is_local_main_process:
+        os.makedirs(output_dir, exist_ok=True)
+    accelerator.print(f"Output directory: {output_dir}")
+
     # Set log every step to save every step.
     if "log_every_step" not in config.training:
         config.training.log_every_step = 1
     if "save_every_step" not in config.training:
         config.training.save_every_step = -1
-
-    # Create the output directory.
-    run_dir = "run_" + datetime.datetime.now().strftime("%Y%m%d-%H%M")
-    output_dir = os.path.join(config.training.output_dir, run_dir)
-    os.makedirs(output_dir, exist_ok=True)
-    accelerator.print(f"Output directory: {output_dir}")
 
     # Load the dataset.
     hugging_face_id = config.dataset.hugging_face_id
@@ -107,7 +117,6 @@ def run_training(config_path: str):
         from transformers import AutoTokenizer
         tokenizer = AutoTokenizer.from_pretrained(tokenizer_id)
         vocab_size = tokenizer.vocab_size
-        accelerator.print(f"Vocabulary size: {vocab_size:_}")
         if tokenizer.pad_token is None:
             tokenizer.add_special_tokens({'pad_token': '[PAD]'})
             vocab_size += 1
@@ -225,11 +234,13 @@ def run_training(config_path: str):
     # Save the tokenizer.
     tokenizer.save_pretrained(output_dir)
 
+    # Enable trackers.
     if wandb_project is not None:
         accelerator.print(f"Enabling wandb logging for project: {wandb_project}")
+        config_dict = OmegaConf.to_container(model_config)
         accelerator.init_trackers(
             project_name=wandb_project, 
-            config=OmegaConf.to_container(model_config),
+            config=config_dict,
             init_kwargs={"wandb": {"name": run_dir}}
         )
 

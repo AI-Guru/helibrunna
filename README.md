@@ -65,7 +65,6 @@ In other words: This repo is currently in an early stage, and thus we cannot gua
 These features are currently implemented:
 
 - Training xLSTM with datasets hosted on [Hugging Face](https://huggingface.co/).
-- Support for [TensorBoard](https://www.tensorflow.org/tensorboard).
 - Support for [Weights & Biases](https://wandb.ai/home).
 - Distributed training [Accelerate](https://huggingface.co/docs/accelerate/index) (untested).
 - Basic model inference with temperature sampling.
@@ -75,6 +74,7 @@ These features are currently implemented:
 These features are planned or would be great to work on:
 
 - Exposing the model as an OpenAI compatible API.
+- Support for [TensorBoard](https://www.tensorflow.org/tensorboard).
 - Fine-tuning.
 - Fine-tuning with LoRA adapters.
 - Quantization.

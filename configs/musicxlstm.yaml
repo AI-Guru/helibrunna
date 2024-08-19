@@ -14,8 +14,6 @@ training:
   save_every_step: 100
   log_every_step: 10
   wandb_project: "musicxlstm"
-  tensorboard_dir: "runs"
-
 
 model:
   num_blocks: 2
