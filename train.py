@@ -74,10 +74,15 @@ def run_training(config_path: str):
     if "wandb_project" in config.training and config.training.wandb_project is not None and config.training.wandb_project != "":
         loggers.append("wandb")
 
+    # Get gradient accumulation steps.
+    gradient_accumulation_steps = config.training.get("gradient_accumulation_steps", 1)
+    #config.training.batch_size = config.training.batch_size * gradient_accumulation_steps
+
     # Initialize the accelerator.
     accelerator = Accelerator(
         log_with=loggers,
         project_dir=output_dir,
+        gradient_accumulation_steps=gradient_accumulation_steps
     )
 
     # Display the logo.
@@ -162,9 +167,7 @@ def run_training(config_path: str):
     log_every_step = config.training.log_every_step
     num_epochs = config.training.num_epochs
     enable_mixed_precision = config.training.enable_mixed_precision
-    wandb_project = config.training.get("wandb_project", None)
-
-  
+    wandb_project = config.training.get("wandb_project", None)  
 
     # Get a subset of the config that includes only the model.
     model_config = OmegaConf.select(config, "model")
@@ -218,11 +221,8 @@ def run_training(config_path: str):
             # Forward pass.
             model.train()
             optimizer.zero_grad()
-            with torch.autocast(
-                device_type=accelerator.device.type,
-                dtype=training_dtype,
-                enabled=enable_mixed_precision,
-            ):
+            #with accelerator.accumulate(model):
+            with accelerator.accumulate(model):#, torch.autocast(device_type=accelerator.device.type, dtype=training_dtype, enabled=enable_mixed_precision):
 
                 outputs = model(inputs.to(device=accelerator.device))
                 loss = torch.nn.functional.cross_entropy(

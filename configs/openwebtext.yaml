@@ -1,8 +1,9 @@
-description: "Train a Lovecraft LSTM model on the Lovecraft corpus."
+description: "Train xLSTM on the OpenWebText corpus. https://huggingface.co/datasets/Skylion007/openwebtext"
 
 training:
   model_name: "openwebtext-xlstm"
-  batch_size: 64
+  batch_size: 80
+  gradient_accumulation_steps: 4
   lr: 0.001
   lr_warmup_steps: 20
   lr_decay_until_steps: "auto"
@@ -13,8 +14,8 @@ training:
   enable_mixed_precision: true
   num_epochs: 10
   output_dir: "output/openwebtext-xlstm"
-  save_every_step: 100
-  log_every_step: 10
+  save_every_step: 10000
+  log_every_step: 100
   wandb_project: "openwebtext-xlstm"
 
 model:
