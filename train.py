@@ -26,6 +26,7 @@ from omegaconf import OmegaConf
 import multiprocessing
 import shutil
 import sys
+import tempfile
 import time
 from tqdm import tqdm
 from safetensors.torch import save_file
@@ -330,8 +331,11 @@ def train_whitespace_tokenizer(raw_datasets):
     tokenizer.train_from_iterator(training_corpus, trainer=trainer)
 
     # Convert the tokenizer to a fast tokenizer.
-    tokenizer = PreTrainedTokenizerFast(tokenizer_file="tokenizer.json")
-    tokenizer.add_special_tokens({'pad_token': '[PAD]'})
+    with tempfile.TemporaryDirectory() as tempdir:
+        tokenizer_path = os.path.join(tempdir, "tokenizer.json")
+        tokenizer.save(tokenizer_path)
+        tokenizer = PreTrainedTokenizerFast(tokenizer_file=tokenizer_path)
+        tokenizer.add_special_tokens({'pad_token': '[PAD]'})
 
     # Return the tokenizer.
     return tokenizer
