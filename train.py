@@ -39,7 +39,7 @@ from torch.utils.data import DataLoader
 from transformers import DataCollatorForLanguageModeling
 from transformers import PreTrainedTokenizerFast
 from xlstm.xlstm_lm_model import xLSTMLMModel, xLSTMLMModelConfig
-from source.utilities import display_logo, human_readable_number, load_configs, validate_config
+from source.utilities import display_logo, human_readable_number, load_configs, validate_config, is_torch_compile_ready
 
 # Import the LinearWarmupCosineAnnealing scheduler from the experiments module.
 # Source: https://github.com/NX-AI/xlstm/tree/main
@@ -175,6 +175,13 @@ def run_training(config_paths: list[str]):
     training_dtype = get_torch_dtype(config.training.weight_precision)
     model = model.to(dtype=training_dtype)
     accelerator.print(f"Training dtype: {training_dtype}")
+
+    # Attempt torch compile.
+    if config.training.get("torch_compile", True):
+        if not is_torch_compile_ready():
+            accelerator.print("WARNING: GPU is not torch compile ready. Training may be slower.")
+        model = torch.compile(model)
+        print("Model compiled.")
 
     # Print the model.
     accelerator.print(model)

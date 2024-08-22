@@ -16,6 +16,7 @@ training:
   save_every_step: 100
   log_every_step: 10
   wandb_project: "lovecraftxlstm"
+  torch_compile: false
 
 model:
   num_blocks: 2

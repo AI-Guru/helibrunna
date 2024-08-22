@@ -1,7 +1,9 @@
 import os
 import colorama
 from omegaconf import DictConfig, OmegaConf
+import torch
 from typing import List, Tuple, Dict
+
 
 def display_logo():
 
@@ -57,6 +59,7 @@ config_schema = {
         "save_every_step": int,
         "log_every_step": int,
         "wandb_project": str,
+        "torch_compile": bool,
     },
     "model": {
         "num_blocks": int,
@@ -153,3 +156,16 @@ def human_readable_number(num):
             return f"{num:3.1f}{unit}"
         num /= 1000.0
     return f"{num:.1f}P"  # For numbers larger than 1T
+
+def is_torch_compile_ready():
+
+    # If there is no GPU, return False.  
+    if not torch.cuda.is_available():
+        return False
+    
+    # Check the device capability.
+    device_capability = torch.cuda.get_device_capability()
+    if device_capability in ((7, 0), (8, 0), (9, 0)):
+        return True
+    
+    return False
