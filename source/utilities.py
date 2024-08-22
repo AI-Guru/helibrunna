@@ -79,6 +79,7 @@ config_schema = {
     },
     "tokenizer": {
         "type": str,
+        "fill_token": str,
     },
 }
 

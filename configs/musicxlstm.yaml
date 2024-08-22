@@ -25,7 +25,7 @@ model:
     slstm:
       num_heads: 1
   slstm_at: [1]
-  context_length: 256
+  context_length: 4096
 
 
 dataset:
@@ -33,4 +33,5 @@ dataset:
   
 tokenizer:
   type: "whitespace"
+  fill_token: "[EOS]"
 

@@ -150,6 +150,12 @@ def run_training(config_paths: list[str]):
 
     # Preprocess the dataset and tokenizer.
     tokenized_datasets, tokenizer = preprocess(config, accelerator)
+    
+    # Get the fill token and its id.
+    fill_token = config.tokenizer.fill_token
+    if fill_token is None:
+        raise Exception("Fill token is missing.")
+    fill_token_id = tokenizer.convert_tokens_to_ids(fill_token)
 
     # Get the vocabulary size.
     vocab_size = tokenizer.vocab_size
@@ -177,6 +183,7 @@ def run_training(config_paths: list[str]):
     accelerator.print(f"Number of parameters: {num_params:_} ({num_params_human})")
     
     # Prepare the DataLoader from the tokenized dataset.
+    # Each batch will be padded to the maximum length in the batch.
     accelerator.print("Preparing DataLoader...")
     train_dataloader = DataLoader(
         tokenized_datasets["train"],
@@ -256,15 +263,16 @@ def run_training(config_paths: list[str]):
     # Add a green progress bar.
     progress_bar = tqdm(total=num_steps, desc="Training", unit="step", colour="GREEN")
 
+    # Do the training.
     for epoch in range(num_epochs):
         for batch in train_dataloader:
 
             # Assuming batch only contains 'input_ids'
             inputs = batch['input_ids'].to(accelerator.device)
 
-            # Get the labels by shifting the inputs. Remove the first token. Fill the last token with 0.
+            # Get the labels by shifting the inputs. Remove the first token. Fill the last token.
             labels = torch.roll(inputs, -1, dims=1)
-            labels[:, -1] = 0
+            labels[:, -1] = fill_token_id
             
             # Forward pass.
             model.train()
@@ -328,42 +336,6 @@ def run_training(config_paths: list[str]):
     history_path = os.path.join(output_dir, "history.json")
     with open(history_path, "w") as f:
         json.dump(history, f)
-
-
-def train_whitespace_tokenizer(raw_datasets):
-    """
-    Trains a whitespace tokenizer using the provided raw datasets.
-    Args:
-        raw_datasets (dict): A dictionary containing the raw datasets.
-    Returns:
-        PreTrainedTokenizerFast: The trained whitespace tokenizer.
-    """
-    
-    # Initialize the tokenizer.
-    tokenizer = Tokenizer(WordLevel(unk_token="[UNK]"))
-    tokenizer.pre_tokenizer = WhitespaceSplit()
-    trainer = WordLevelTrainer(
-        special_tokens=["[UNK]", "[CLS]", "[SEP]", "[PAD]", "[MASK]"]
-    )
-
-    # Train the tokenizer.
-    def get_training_corpus():
-        dataset = raw_datasets["train"]
-        for start_idx in range(0, len(dataset), 1000):
-            samples = dataset[start_idx : start_idx + 1000]
-            yield samples["text"]
-    training_corpus = get_training_corpus()
-    tokenizer.train_from_iterator(training_corpus, trainer=trainer)
-
-    # Convert the tokenizer to a fast tokenizer.
-    with tempfile.TemporaryDirectory() as tempdir:
-        tokenizer_path = os.path.join(tempdir, "tokenizer.json")
-        tokenizer.save(tokenizer_path)
-        tokenizer = PreTrainedTokenizerFast(tokenizer_file=tokenizer_path)
-        tokenizer.add_special_tokens({'pad_token': '[PAD]'})
-
-    # Return the tokenizer.
-    return tokenizer
 
 
 def get_torch_dtype(dtype: str) -> torch.dtype:
@@ -560,12 +532,10 @@ def preprocess(config, accelerator=None, ask_for_overwrite=False):
             accelerator.print("Training whitespace tokenizer...")
             tokenizer = train_whitespace_tokenizer(raw_datasets)
             tokenizer.save_pretrained(tokenizer_path)
-            vocab_size = tokenizer.vocab_size
         else:
             while not os.path.exists(f"{tokenizer_path}/tokenizer.json"):
                 time.sleep(1)
             tokenizer = PreTrainedTokenizerFast.from_pretrained(tokenizer_path)
-            vocab_size = tokenizer.vocab_size
     elif config.tokenizer.type == "pretrained":
         from transformers import AutoTokenizer
         if accelerator.is_local_main_process:
@@ -630,6 +600,42 @@ def preprocess(config, accelerator=None, ask_for_overwrite=False):
         accelerator.print(f"Tokenized text: {tokenized}")
 
     return tokenized_datasets, tokenizer
+
+
+def train_whitespace_tokenizer(raw_datasets):
+    """
+    Trains a whitespace tokenizer using the provided raw datasets.
+    Args:
+        raw_datasets (dict): A dictionary containing the raw datasets.
+    Returns:
+        PreTrainedTokenizerFast: The trained whitespace tokenizer.
+    """
+    
+    # Initialize the tokenizer.
+    tokenizer = Tokenizer(WordLevel(unk_token="[UNK]"))
+    tokenizer.pre_tokenizer = WhitespaceSplit()
+    trainer = WordLevelTrainer(
+        special_tokens=["[UNK]", "[PAD]", "[EOS]"]
+    )
+
+    # Train the tokenizer.
+    def get_training_corpus():
+        dataset = raw_datasets["train"]
+        for start_idx in range(0, len(dataset), 1000):
+            samples = dataset[start_idx : start_idx + 1000]
+            yield samples["text"]
+    training_corpus = get_training_corpus()
+    tokenizer.train_from_iterator(training_corpus, trainer=trainer)
+
+    # Convert the tokenizer to a fast tokenizer.
+    with tempfile.TemporaryDirectory() as tempdir:
+        tokenizer_path = os.path.join(tempdir, "tokenizer.json")
+        tokenizer.save(tokenizer_path)
+        tokenizer = PreTrainedTokenizerFast(tokenizer_file=tokenizer_path)
+        tokenizer.add_special_tokens({'pad_token': '[PAD]'})
+
+    # Return the tokenizer.
+    return tokenizer
 
 
 if __name__ == "__main__":

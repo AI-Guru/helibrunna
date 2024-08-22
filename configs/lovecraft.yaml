@@ -36,4 +36,5 @@ tokenizer:
   type: "pretrained"
   pretrained_class: "GPT2Tokenizer"
   pretrained_id: "openai-community/gpt2"
+  fill_token: "<|endoftext|>"
 
