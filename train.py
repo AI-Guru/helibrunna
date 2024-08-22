@@ -166,9 +166,8 @@ def run_training(config_paths: list[str]):
 
     # Create the model.
     accelerator.print("Creating model...")
-    model = xLSTMLMModel(from_dict(xLSTMLMModelConfig, OmegaConf.to_container(config.model))).to(
-        device=accelerator.device
-    )
+    model = xLSTMLMModel(from_dict(xLSTMLMModelConfig, OmegaConf.to_container(config.model)))
+    model = model.to(device=accelerator.device)
     model.reset_parameters()
 
     # Apply precision.
@@ -266,11 +265,12 @@ def run_training(config_paths: list[str]):
         "lr": [],
         "step": [],
     }
-
+    average_loss = 0.0
     # Add a green progress bar.
     progress_bar = tqdm(total=num_steps, desc="Training", unit="step", colour="GREEN")
 
     # Do the training.
+    model.train()
     for epoch in range(num_epochs):
         for batch in train_dataloader:
 
@@ -282,12 +282,10 @@ def run_training(config_paths: list[str]):
             labels[:, -1] = fill_token_id
             
             # Forward pass.
-            model.train()
-            optimizer.zero_grad()
-            #with accelerator.accumulate(model):
+            # Use gradient accumulation.
             with accelerator.accumulate(model):#, torch.autocast(device_type=accelerator.device.type, dtype=training_dtype, enabled=enable_mixed_precision):
 
-                outputs = model(inputs.to(device=accelerator.device))
+                outputs = model(inputs)
                 loss = torch.nn.functional.cross_entropy(
                     outputs.view(-1, vocab_size),
                     labels.view(-1),
@@ -296,7 +294,9 @@ def run_training(config_paths: list[str]):
                 accelerator.backward(loss)
                 optimizer.step()
                 lr_scheduler.step()
+                optimizer.zero_grad()
                 running_loss.append(loss.item())
+                average_loss = sum(running_loss) / len(running_loss)
             
             # Next step.
             step += 1
@@ -305,13 +305,13 @@ def run_training(config_paths: list[str]):
             if step % save_every_step == 0 and step > 0 and save_every_step > 0:
                 checkpoint_dir = os.path.join(output_dir, f"checkpoint-{step}")
                 accelerator.wait_for_everyone()
-                save_model(accelerator.unwrap_model(model), model_config, checkpoint_dir)
+                if accelerator.is_local_main_process:
+                    save_model(accelerator.unwrap_model(model), model_config, checkpoint_dir)
 
             # Log every step.
-            if step % log_every_step == 0 and step > 0 and log_every_step > 0:
+            if step % log_every_step == 0 and step > 0 and log_every_step > 0 and accelerator.is_local_main_process:
                 
                 # Update the log.
-                average_loss = sum(running_loss) / len(running_loss)
                 last_lr = lr_scheduler.get_last_lr()[0]
                 history["loss"].append(average_loss)
                 history["lr"].append(last_lr)
@@ -337,7 +337,8 @@ def run_training(config_paths: list[str]):
     # Save the last model.
     checkpoint_dir = os.path.join(output_dir, f"checkpoint-{step}-last")
     accelerator.wait_for_everyone()
-    save_model(accelerator.unwrap_model(model), model_config, checkpoint_dir)
+    if accelerator.is_local_main_process:
+        save_model(accelerator.unwrap_model(model), model_config, checkpoint_dir)
 
     # Save the history as JSON.
     history_path = os.path.join(output_dir, "history.json")
