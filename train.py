@@ -125,17 +125,26 @@ def run_training(config_paths: list[str]):
     # Get gradient accumulation steps.
     gradient_accumulation_steps = config.training.get("gradient_accumulation_steps", 1)
     #config.training.batch_size = config.training.batch_size * gradient_accumulation_steps
+    mixed_precision = config.training.get("mixed_precision", None)
 
     # Initialize the accelerator.
     accelerator = Accelerator(
         log_with=loggers,
         project_dir=output_dir,
-        gradient_accumulation_steps=gradient_accumulation_steps
+        gradient_accumulation_steps=gradient_accumulation_steps,
+        mixed_precision=mixed_precision
     )
 
     # Display the logo.
     if accelerator.is_local_main_process:
         display_logo()
+
+    # Display mixed precision.
+    if accelerator.is_local_main_process:
+        if mixed_precision is not None:
+            print(f"Mixed precision enabled. Precision: {mixed_precision}")
+        else:
+            print("Mixed precision disabled.")
 
     # Create the output directory.
     if accelerator.is_local_main_process:

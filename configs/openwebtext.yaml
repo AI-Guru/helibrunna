@@ -1,6 +1,7 @@
 description: "Train xLSTM on the OpenWebText corpus. https://huggingface.co/datasets/Skylion007/openwebtext"
 
 training:
+  mixed_precision: "fp16"
   model_name: "openwebtext-xlstm"
   batch_size: 4
   gradient_accumulation_steps: 4
@@ -17,6 +18,7 @@ training:
   save_every_step: 10000
   log_every_step: 100
   wandb_project: "openwebtext-xlstm"
+  torch_compile: false
 
 dataset:
   hugging_face_id: "Skylion007/openwebtext"
@@ -25,4 +27,5 @@ tokenizer:
   type: "pretrained"
   pretrained_class: "GPT2Tokenizer"
   pretrained_id: "openai-community/gpt2"
+  fill_token: "<|endoftext|>"
 

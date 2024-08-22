@@ -1,0 +1,11 @@
+model:
+  num_blocks: 2
+  embedding_dim: 384
+  mlstm_block:
+    mlstm:
+      num_heads: 4
+  slstm_block:
+    slstm:
+      num_heads: 4
+  slstm_at: [1]
+  context_length: 2048
