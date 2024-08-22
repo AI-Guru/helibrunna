@@ -82,6 +82,65 @@ config_schema = {
     },
 }
 
+
+def load_config(config_path: str) -> OmegaConf:
+    """
+    Load the configuration from the specified path.
+    Args:
+        config_path (str): The path to the configuration file.
+
+    Raises:
+        FileNotFoundError: If the configuration file is not found.
+    Returns:
+        OmegaConf: The configuration object.
+    """
+    
+    if not os.path.exists(config_path):
+        raise FileNotFoundError(f"Config file not found: {config_path}")
+    with open(config_path, "r") as f:
+        config_yaml = f.read()
+    config = OmegaConf.create(config_yaml)
+    OmegaConf.resolve(config)
+    return config
+
+
+def load_configs(config_paths: str) -> OmegaConf:
+    """
+    Load and merge configurations from the specified paths.
+    Args:
+        config_paths (str): The paths to the configuration files.
+
+    Raises:
+        FileNotFoundError: If any of the configuration files are not found.
+    Returns:
+        OmegaConf: The merged configuration object.
+    """
+    
+    merged_config = OmegaConf.create()
+
+    for config_path in config_paths:
+        if not os.path.exists(config_path):
+            raise FileNotFoundError(f"Config file not found: {config_path}")
+        
+        with open(config_path, "r") as f:
+            config_yaml = f.read()
+        
+        new_config = OmegaConf.create(config_yaml)
+        OmegaConf.resolve(new_config)
+
+        # Detect and warn about overwrites
+        for key, value in new_config.items():
+            if key in merged_config:
+                if isinstance(value, DictConfig) and isinstance(merged_config[key], DictConfig):
+                    # Merge nested configurations
+                    OmegaConf.merge(merged_config[key], value)
+                else:
+                    print(f"Warning: Overwriting '{key}' from '{merged_config[key]}' to '{value}' in config file: {config_path}")
+            merged_config[key] = value
+    
+    return merged_config
+
+
 def validate_config(config: DictConfig):
     config = OmegaConf.to_container(config, resolve=True)
     validate_dict(config, config_schema, parent_key='')

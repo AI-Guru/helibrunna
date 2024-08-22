@@ -136,6 +136,21 @@ accelerate config
 accelerate launch train.py configs/musicxlstm.yaml
 ```
 
+## Train on openwebtext
+
+This one is a little more complex. Because of the dataset size it is advised to preprocess it first. And here the model config is standalone and must be loaded separatedly.
+
+This is preprocessing with the separate model config:
+
+```
+python train.py preprocess configs/openwebtext.yaml configs/xlstm_7to1_01_125M.yaml
+```
+
+And this is how to train:
+
+```
+accelerate launch train.py configs/openwebtext.yaml configs/xlstm_7to1_01_125M.yaml
+```
 
 ## Running inference
 

@@ -21,6 +21,7 @@ import torch
 from accelerate import Accelerator
 from dacite import from_dict
 from datasets import load_dataset, load_from_disk
+import fire
 import json
 from omegaconf import OmegaConf
 import multiprocessing
@@ -38,7 +39,7 @@ from torch.utils.data import DataLoader
 from transformers import DataCollatorForLanguageModeling
 from transformers import PreTrainedTokenizerFast
 from xlstm.xlstm_lm_model import xLSTMLMModel, xLSTMLMModelConfig
-from source.utilities import display_logo, validate_config, human_readable_number
+from source.utilities import display_logo, human_readable_number, load_configs, validate_config
 
 # Import the LinearWarmupCosineAnnealing scheduler from the experiments module.
 # Source: https://github.com/NX-AI/xlstm/tree/main
@@ -49,10 +50,55 @@ if not os.path.exists("experiments/lr_scheduler.py"):
     urllib.request.urlretrieve(url, "experiments/lr_scheduler.py")
 from experiments.lr_scheduler import LinearWarmupCosineAnnealing
 
-
+# 
 os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
 
-def run_training(config_path: str):
+
+
+def main():
+    """
+    Main function to run the training process.
+
+    Args:
+        preprocess (bool): Whether to only preprocess the dataset and tokenizer.
+        config_paths (str): The paths to the configuration files.
+    Raises:
+
+    Returns:
+        None
+    """
+
+    # Parse the arguments.
+    arguments = sys.argv[1:]
+
+    # Raise an error if no arguments are provided.
+    if len(arguments) == 0:
+        print("No arguments provided.")
+        sys.exit(1)
+
+    # See if the first argument is "preprocess".
+    if arguments[0] == "preprocess":
+        preprocess = True
+        arguments = arguments[1:]
+    else:
+        preprocess = False
+
+    # All the remaining arguments are configuration files.
+    config_paths = arguments
+
+    # Check if any configuration files are provided.
+    if len(config_paths) == 0:
+        print("No configuration files provided.")
+        sys.exit(1)
+
+    # Run preprocessing or training.
+    if preprocess:
+        preprocess_only(config_paths)
+    else:
+        run_training(config_paths)
+
+
+def run_training(config_paths: list[str]):
     """
     Run the training process based on the provided configuration file.
     Args:
@@ -64,7 +110,8 @@ def run_training(config_path: str):
     """
 
     # Load the configuration.
-    config = load_config(config_path)
+    config = load_configs(config_paths)
+    validate_config(config)
 
     # Specify the output_dir.
     run_dir = "run_" + datetime.datetime.now().strftime("%Y%m%d-%H%M")
@@ -283,28 +330,6 @@ def run_training(config_path: str):
         json.dump(history, f)
 
 
-def load_config(config_path: str) -> OmegaConf:
-    """
-    Load the configuration from the specified path.
-    Args:
-        config_path (str): The path to the configuration file.
-
-    Raises:
-        FileNotFoundError: If the configuration file is not found.
-    Returns:
-        OmegaConf: The configuration object.
-    """
-    
-    if not os.path.exists(config_path):
-        raise FileNotFoundError(f"Config file not found: {config_path}")
-    with open(config_path, "r") as f:
-        config_yaml = f.read()
-    config = OmegaConf.create(config_yaml)
-    OmegaConf.resolve(config)
-    validate_config(config)
-    return config
-
-
 def train_whitespace_tokenizer(raw_datasets):
     """
     Trains a whitespace tokenizer using the provided raw datasets.
@@ -465,10 +490,11 @@ def create_readme(output_dir, config):
     shutil.copy(banner_path, banner_target_path)
 
 
-def preprocess_only(config_path):
+def preprocess_only(config_paths: list[str]):
 
     # Load the configuration.
-    config = load_config(config_path)
+    config = load_configs(config_paths)
+    validate_config(config)
 
     # Initialize the accelerator.
     accelerator = Accelerator()
@@ -606,11 +632,6 @@ def preprocess(config, accelerator=None, ask_for_overwrite=False):
     return tokenized_datasets, tokenizer
 
 
-# Run the training.
 if __name__ == "__main__":
-    if sys.argv[1] == "preprocess":
-        config_path = sys.argv[2]
-        preprocess_only(config_path)
-    else:
-        config_path = sys.argv[1]
-        run_training(config_path)
+
+    main()

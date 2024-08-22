@@ -2,7 +2,7 @@ description: "Train xLSTM on the OpenWebText corpus. https://huggingface.co/data
 
 training:
   model_name: "openwebtext-xlstm"
-  batch_size: 80
+  batch_size: 4
   gradient_accumulation_steps: 4
   lr: 0.001
   lr_warmup_steps: 20
@@ -12,23 +12,11 @@ training:
   amp_precision: bfloat16
   weight_precision: float32
   enable_mixed_precision: true
-  num_epochs: 10
+  num_epochs: 1
   output_dir: "output/openwebtext-xlstm"
   save_every_step: 10000
   log_every_step: 100
   wandb_project: "openwebtext-xlstm"
-
-model:
-  num_blocks: 2
-  embedding_dim: 64
-  mlstm_block:
-    mlstm:
-      num_heads: 1
-  slstm_block:
-    slstm:
-      num_heads: 1
-  slstm_at: [1]
-  context_length: 256
 
 dataset:
   hugging_face_id: "Skylion007/openwebtext"
