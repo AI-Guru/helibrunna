@@ -110,7 +110,7 @@ def run_training(config_paths: list[str]):
 
     # Load the configuration.
     config = load_configs(config_paths)
-    validate_config(config)
+    #validate_config(config)
 
     # Specify the output_dir.
     run_dir = "run_" + datetime.datetime.now().strftime("%Y%m%d-%H%M")

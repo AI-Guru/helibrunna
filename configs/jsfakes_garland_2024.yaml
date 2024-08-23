@@ -28,6 +28,14 @@ model:
   slstm_at: [2]
   context_length: 2048
 
+modelGPT:
+  type: "gpt2"
+  num_blocks: 4
+  embedding_dim: 64
+  decoder:
+    num_heads: 4
+  context_length: 2048
+
 
 dataset:
   hugging_face_id: "TristanBehrens/jsfakes_garland_2024-100K"

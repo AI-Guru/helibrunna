@@ -68,10 +68,10 @@ class GPT2LMModel(WeightDecayOptimGroupMixin, nn.Module):
         self.gpt2_block_stack.reset_parameters()
 
         # Uncomment the small_init_init_ if using this initialization
-        small_init_init_(self.token_embedding.weight, dim=self.config.n_embd)
+        small_init_init_(self.token_embedding.weight, dim=self.config.embedding_dim)
 
         if not self.config.tie_weights:
-            small_init_init_(self.lm_head.weight, dim=self.config.n_embd)
+            small_init_init_(self.lm_head.weight, dim=self.config.embedding_dim)
             pass
 
     def forward(self, idx: torch.Tensor) -> torch.Tensor:
@@ -204,6 +204,11 @@ class GPT2Block(nn.Module):
         # The step function processes one step at a time in autoregressive generation.
         output = self.forward(x, attn_mask=attn_mask)
         return output, {}  # State is not needed in the same way as LSTMs
+    
+    def reset_parameters(self) -> None:
+        for layer in self.modules():
+            if isinstance(layer, (nn.Linear, nn.Embedding)):
+                small_init_init_(layer.weight, dim=layer.weight.size(-1))
 
 
 class PositionalEncoding(nn.Module):
