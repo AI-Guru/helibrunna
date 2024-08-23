@@ -175,9 +175,15 @@ def run_training(config_paths: list[str]):
 
     # Create the model.
     accelerator.print("Creating model...")
-    model = xLSTMLMModel(from_dict(xLSTMLMModelConfig, OmegaConf.to_container(config.model)))
-    model = model.to(device=accelerator.device)
-    model.reset_parameters()
+    model_type = config.model.get("type", "xLSTMLMModel")
+    if model_type == "xLSTMLMModel":
+        model = xLSTMLMModel(from_dict(xLSTMLMModelConfig, OmegaConf.to_container(config.model)))
+        model = model.to(device=accelerator.device)
+        model.reset_parameters()
+    elif model_type == "gpt2":
+        assert False, "Not implemented."
+    else:
+        raise ValueError(f"Unknown model type: {model_type}")
 
     # Apply precision.
     training_dtype = get_torch_dtype(config.training.weight_precision)
