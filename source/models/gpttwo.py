@@ -10,7 +10,6 @@ from transformers import GPT2Config, GPT2Model
 from xlstm.utils import WeightDecayOptimGroupMixin
 # from .components.init import small_init_init_
 
-# NOTE: This is untested code. It is meant to be used as a reference for the actual implementation.
 
 @dataclass
 class GPT2LMModelConfig(GPT2Config):
