@@ -63,7 +63,7 @@ config_schema = {
         "model_name": str,
         "batch_size": int,
         "lr": float,
-        "lr_warmup_steps": int,
+        "lr_warmup_steps": (int, str),
         "lr_decay_until_steps": (int, str),
         "lr_decay_factor": float,
         "weight_decay": float,

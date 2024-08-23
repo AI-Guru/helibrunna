@@ -212,6 +212,18 @@ def run_training(config_paths: list[str]):
     num_steps = num_steps // accelerator.num_processes
     accelerator.print(f"Estimated number of steps: {num_steps:_}")
 
+    # If the lr_decay_until_steps is set to "auto", set it to the number of steps.
+    if config.training.lr_decay_until_steps == "auto":
+        config.training.lr_decay_until_steps = num_steps
+
+    # If the lr_warmup_steps is a percentage, convert it to a number of steps.
+    if isinstance(config.training.lr_warmup_steps, str):
+        percentage = config.training.lr_warmup_steps
+        if not percentage.endswith("%"):
+            raise ValueError(f"Invalid percentage: {percentage}")
+        percentage = float(percentage[:-1]) / 100
+        config.training.lr_warmup_steps = int(num_steps * percentage)
+
     # Prepare the optimizer and learning rate scheduler.
     optimizer_groups = model._create_weight_decay_optim_groups()
     optimizer = torch.optim.AdamW(
@@ -224,7 +236,7 @@ def run_training(config_paths: list[str]):
     lr_scheduler = LinearWarmupCosineAnnealing(
         optimizer,
         config.training.lr_warmup_steps,
-        config.training.lr_decay_until_steps if config.training.lr_decay_until_steps != "auto" else num_steps,
+        config.training.lr_decay_until_steps,
         config.training.lr,
         config.training.lr_decay_factor * config.training.lr,
     )
