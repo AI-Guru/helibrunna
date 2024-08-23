@@ -1,6 +1,9 @@
 from omegaconf import OmegaConf
 from dacite import from_dict
 from xlstm.xlstm_lm_model import xLSTMLMModel, xLSTMLMModelConfig
+import sys
+sys.path.append(".")
+from source.utilities import model_from_config
 
 # Load the config.
 config_string = """ 
@@ -17,12 +20,15 @@ model:
   slstm_at: [3, 20]
   context_length: 2048
 """
-config = OmegaConf.create(config_string)
+
+if len(sys.argv) > 1:
+  config_path = sys.argv[1]
+  config = OmegaConf.load(config_path)
+else:
+  config = OmegaConf.create(config_string)
 
 # Create the model.
-model_config = from_dict(xLSTMLMModelConfig, OmegaConf.to_container(config.model))
-model = xLSTMLMModel(model_config)
-print(model_config)
+model = model_from_config(config.model)
 print(model)
 
 # Get the number of parameters.

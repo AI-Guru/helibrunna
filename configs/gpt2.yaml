@@ -1,0 +1,7 @@
+model:
+  type: "gpt2"
+  num_blocks: 6
+  embedding_dim: 384
+  decoder:
+    num_heads: 4
+  context_length: 2048

@@ -38,8 +38,7 @@ from tokenizers.trainers import WordLevelTrainer
 from torch.utils.data import DataLoader
 from transformers import DataCollatorForLanguageModeling
 from transformers import PreTrainedTokenizerFast
-from xlstm.xlstm_lm_model import xLSTMLMModel, xLSTMLMModelConfig
-from source.utilities import display_logo, human_readable_number, load_configs, validate_config, is_torch_compile_ready
+from source.utilities import display_logo, human_readable_number, load_configs, validate_config, is_torch_compile_ready, model_from_config
 
 # Import the LinearWarmupCosineAnnealing scheduler from the experiments module.
 # Source: https://github.com/NX-AI/xlstm/tree/main
@@ -175,15 +174,10 @@ def run_training(config_paths: list[str]):
 
     # Create the model.
     accelerator.print("Creating model...")
-    model_type = config.model.get("type", "xLSTMLMModel")
-    if model_type == "xLSTMLMModel":
-        model = xLSTMLMModel(from_dict(xLSTMLMModelConfig, OmegaConf.to_container(config.model)))
-        model = model.to(device=accelerator.device)
-        model.reset_parameters()
-    elif model_type == "gpt2":
-        assert False, "Not implemented."
-    else:
-        raise ValueError(f"Unknown model type: {model_type}")
+    #model_type = config.model.get("type", "xLSTMLMModel")
+    model = model_from_config(config.model)
+    model = model.to(device=accelerator.device)
+    model.reset_parameters()
 
     # Apply precision.
     training_dtype = get_torch_dtype(config.training.weight_precision)

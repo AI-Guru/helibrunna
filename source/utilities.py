@@ -19,6 +19,9 @@ import colorama
 from omegaconf import DictConfig, OmegaConf
 import torch
 from typing import List, Tuple, Dict
+from xlstm.xlstm_lm_model import xLSTMLMModel, xLSTMLMModelConfig
+from .models.gpttwo import GPT2LMModel, GPT2LMModelConfig
+from dacite import from_dict
 
 
 def display_logo():
@@ -185,3 +188,14 @@ def is_torch_compile_ready():
         return True
     
     return False
+
+
+def model_from_config(model_config: DictConfig):
+    model_type = model_config.get("type", "xLSTMLMModel")
+    if model_type == "xLSTMLMModel":
+        model = xLSTMLMModel(from_dict(xLSTMLMModelConfig, OmegaConf.to_container(model_config)))
+    elif model_type == "gpt2":
+        model = GPT2LMModel(from_dict(GPT2LMModelConfig, OmegaConf.to_container(model_config)))
+    else:
+        raise ValueError(f"Unknown model type: {model_type}")
+    return model
