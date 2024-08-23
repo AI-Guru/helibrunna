@@ -9,6 +9,10 @@ This is how ChatGPT describes the project:
 
 Nice!
 
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=AI-Guru/helibrunna&type=Date)](https://star-history.com/#AI-Guru/helibrunna&Date)
+
 
 ## License Overview
 
