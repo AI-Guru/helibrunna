@@ -8,7 +8,7 @@ from torch import nn
 from transformers import GPT2Config, GPT2Model
 
 from xlstm.utils import WeightDecayOptimGroupMixin
-# from .components.init import small_init_init_
+from xlstm.components.init import small_init_init_
 
 
 @dataclass
@@ -68,10 +68,10 @@ class GPT2LMModel(WeightDecayOptimGroupMixin, nn.Module):
         self.gpt2_block_stack.reset_parameters()
 
         # Uncomment the small_init_init_ if using this initialization
-        # small_init_init_(self.token_embedding.weight, dim=self.config.n_embd)
+        small_init_init_(self.token_embedding.weight, dim=self.config.n_embd)
 
         if not self.config.tie_weights:
-            # small_init_init_(self.lm_head.weight, dim=self.config.n_embd)
+            small_init_init_(self.lm_head.weight, dim=self.config.n_embd)
             pass
 
     def forward(self, idx: torch.Tensor) -> torch.Tensor:
