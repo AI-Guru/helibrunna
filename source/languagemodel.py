@@ -26,7 +26,7 @@ from .utilities import display_logo, model_from_config
 
 class LanguageModel:
 
-    def __init__(self, model_path_or_repo, config_overrides={}):
+    def __init__(self, model_path_or_repo, config_overrides={}, mask_special_tokens=True):
         """
         Initializes the LanguageModel object.
         Args:
@@ -37,6 +37,9 @@ class LanguageModel:
         Returns:
             None
         """
+
+        # Set the maskt_special_tokens flag.
+        self.mask_special_tokens = mask_special_tokens
 
         # Set the device.
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -111,6 +114,7 @@ class LanguageModel:
         temperature: float = 1.0,
         max_length: int = 100,
         end_tokens: list[str] = [],
+        forbidden_tokens: list[str] = ["[PAD]"],
         return_structured_output: bool = False
     ):
         """
@@ -137,7 +141,16 @@ class LanguageModel:
         # Determine the end tokens ids.
         end_token_ids = []
         for end_token in end_tokens:
+            assert end_token in self.tokenizer.vocab
             end_token_ids.append(self.tokenizer(end_token).input_ids[0])
+
+        # Initialize the ids to mask.
+        ids_to_mask = []
+
+        # Mask the forbidden tokens.
+        for forbidden_token in forbidden_tokens:
+            assert forbidden_token in self.tokenizer.vocab
+            ids_to_mask.extend(self.tokenizer(forbidden_token).input_ids)
 
         # Generate the continuation.
         start_time = time.time()
@@ -147,6 +160,10 @@ class LanguageModel:
             # Generate the continuation.
             outputs = self.model(inputs.to(device=self.device))
             assert outputs.shape[0] == 1
+
+
+            # Mask the tokens.
+            outputs[:, :, self.tokenizer.all_special_ids] = float("-inf")
 
             # Use the temperature to sample from the distribution.
             outputs = outputs / temperature
