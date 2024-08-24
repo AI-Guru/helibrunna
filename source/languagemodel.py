@@ -1,4 +1,3 @@
-
 # Helibrunna - A HuggingFace compatible xLSTM trainer.
 # Copyright (c) 2024 Dr. Tristan Behrens
 #
@@ -27,7 +26,7 @@ from .utilities import display_logo, model_from_config
 
 class LanguageModel:
 
-    def __init__(self, model_path_or_repo):
+    def __init__(self, model_path_or_repo, config_overrides={}):
         """
         Initializes the LanguageModel object.
         Args:
@@ -81,9 +80,14 @@ class LanguageModel:
             raise ValueError(f"Config not found at {config_path}")
         model_config = OmegaConf.load(config_path)
 
+        # Override the config.
+        if config_overrides != {} and config_overrides is not None:
+            model_config = OmegaConf.merge(model_config, config_overrides)
+
         # Create the model from the config.
         model = model_from_config(model_config)
         model.to(self.device)
+        self.config = model_config
 
         # Load the weights from the checkpoint.
         weights_path = os.path.join(model_path, "model.safetensors")
@@ -157,6 +161,10 @@ class LanguageModel:
 
             # Check if the end token is reached.
             if outputs[0] in end_token_ids:
+                break
+
+            if inputs.shape[1] >= self.config.context_length:
+                print("Warning: The maximum context length has been reached.")
                 break
 
         # Print the elapsed time and tokens per second.

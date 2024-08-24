@@ -22,9 +22,16 @@ from typing import List, Tuple, Dict
 from xlstm.xlstm_lm_model import xLSTMLMModel, xLSTMLMModelConfig
 from .models.gpttwo import GPT2LMModel, GPT2LMModelConfig
 from dacite import from_dict
+from collections.abc import MutableMapping
 
 
 def display_logo():
+    """
+    Display the logo by printing it line by line with a cyberpunk color scheme.
+
+    Raises:
+        FileNotFoundError: If the logo file is missing.
+    """
 
     # Load the logo.
     logo_path = os.path.join("assets", "asciilogo.txt")
@@ -165,18 +172,52 @@ def load_configs(config_paths: str) -> OmegaConf:
 
 
 def validate_config(config: DictConfig):
+    """
+    Validate the configuration dictionary.
+    Args:
+        config (DictConfig): The configuration dictionary to validate.
+    Returns:
+        None
+    Raises:
+        ValidationError: If the configuration is invalid.
+    """
+
     config = OmegaConf.to_container(config, resolve=True)
     validate_dict(config, config_schema, parent_key='')
 
 
 def human_readable_number(num):
+    """
+    Converts a number into a human-readable format.
+
+    Args:
+        num (float): The number to be converted.
+
+    Returns:
+        str: The human-readable representation of the number.
+
+    Examples:
+        >>> human_readable_number(1000)
+        '1.0K'
+        >>> human_readable_number(1500000)
+        '1.5M'
+        >>> human_readable_number(5000000000)
+        '5.0B'
+    """
+
     for unit in ['', 'K', 'M', 'B', 'T']:
         if abs(num) < 1000.0:
             return f"{num:3.1f}{unit}"
         num /= 1000.0
     return f"{num:.1f}P"  # For numbers larger than 1T
 
+
 def is_torch_compile_ready():
+    """
+    Check if the current system is ready for compiling Torch code.
+    Returns:
+        bool: True if the system is ready for compiling Torch code, False otherwise.
+    """
 
     # If there is no GPU, return False.  
     if not torch.cuda.is_available():
@@ -191,6 +232,19 @@ def is_torch_compile_ready():
 
 
 def model_from_config(model_config: DictConfig):
+    """
+    Create a model based on the provided model configuration.
+
+    Args:
+        model_config (DictConfig): The configuration for the model.
+
+    Returns:
+        The created model.
+
+    Raises:
+        ValueError: If the model type is unknown.
+    """
+    
     model_type = model_config.get("type", "xLSTMLMModel")
     if model_type == "xLSTMLMModel":
         model = xLSTMLMModel(from_dict(xLSTMLMModelConfig, OmegaConf.to_container(model_config)))
