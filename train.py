@@ -290,6 +290,12 @@ def run_training(config_paths: list[str]):
     # Add a green progress bar.
     progress_bar = tqdm(total=num_steps, desc="Training", unit="step", colour="GREEN")
 
+    # Ignore tokens during loss calculation.
+    ignore_index = -1
+    if tokenizer.pad_token is not None:
+        ignore_index = tokenizer.pad_token_id
+    accelerator.print(f"Ignore index: {ignore_index}")
+
     # Do the training.
     model.train()
     for epoch in range(num_epochs):
@@ -310,7 +316,7 @@ def run_training(config_paths: list[str]):
                 loss = torch.nn.functional.cross_entropy(
                     outputs.view(-1, vocab_size),
                     labels.view(-1),
-                    ignore_index=-1,
+                    ignore_index=ignore_index,
                 )
                 accelerator.backward(loss)
                 optimizer.step()
