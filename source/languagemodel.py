@@ -86,6 +86,8 @@ class LanguageModel:
         # Override the config.
         if config_overrides != {} and config_overrides is not None:
             model_config = OmegaConf.merge(model_config, config_overrides)
+        import json
+        print(json.dumps(OmegaConf.to_container(model_config), indent=4))
 
         # Create the model from the config.
         model = model_from_config(model_config)
@@ -114,7 +116,7 @@ class LanguageModel:
         temperature: float = 1.0,
         max_length: int = 100,
         end_tokens: list[str] = [],
-        forbidden_tokens: list[str] = ["[PAD]"],
+        forbidden_tokens: list[str] = [],
         return_structured_output: bool = False
     ):
         """
@@ -157,10 +159,14 @@ class LanguageModel:
         tokens_count = 0
         while inputs.shape[1] < max_length:
 
+            # Stop if the maximum context length is reached.
+            if inputs.shape[1] >= self.config.context_length:
+                print("Warning: The maximum context length has been reached.")
+                break
+
             # Generate the continuation.
             outputs = self.model(inputs.to(device=self.device))
             assert outputs.shape[0] == 1
-
 
             # Mask the tokens.
             outputs[:, :, self.tokenizer.all_special_ids] = float("-inf")
@@ -178,10 +184,6 @@ class LanguageModel:
 
             # Check if the end token is reached.
             if outputs[0] in end_token_ids:
-                break
-
-            if inputs.shape[1] >= self.config.context_length:
-                print("Warning: The maximum context length has been reached.")
                 break
 
         # Print the elapsed time and tokens per second.
