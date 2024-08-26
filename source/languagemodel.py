@@ -205,3 +205,33 @@ class LanguageModel:
                 "tokens_per_second": tokens_per_second
             }
         
+    def summary(self):
+        """
+        Prints a summary of the model. Makes the model architecture readable. Includes the number of parameters.
+        """
+
+        # Print the model.
+        print(self.model)
+
+        # Get the number of parameters.
+        number_of_parameters = sum(p.numel() for p in self.model.parameters())
+        print(f"Number of parameters: {number_of_parameters:_}")
+        sizes = ["K", "M", "B", "T"]
+        size_index = 0
+        while number_of_parameters > 1000:
+            number_of_parameters /= 1000
+            size_index += 1
+        print(f"Number of parameters: {number_of_parameters:.2f}{sizes[size_index]}")
+        
+        # Size of the model.
+        # Get the total size of all the markdown files. And make it human readable.
+        number_of_parameters = sum(p.numel() for p in self.model.parameters())
+        total_size = number_of_parameters * 4
+        sizes = ["B", "KB", "MB", "GB", "TB"]
+        size_index = 0
+        while total_size > 1024:
+            total_size /= 1024
+            size_index += 1
+        print(f"Total size of the model: {total_size:.2f}{sizes[size_index]} for precision 32-bit floats.")
+
+        
