@@ -33,8 +33,12 @@ def display_logo():
         FileNotFoundError: If the logo file is missing.
     """
 
+    # Get the path of this script and use it to find the logo.
+    script_path = os.path.dirname(os.path.realpath(__file__))
+    search_path = os.path.dirname(script_path)
+
     # Load the logo.
-    logo_path = os.path.join("assets", "asciilogo.txt")
+    logo_path = os.path.join(search_path, "assets", "asciilogo.txt")
     if not os.path.exists(logo_path):
         raise FileNotFoundError("The logo file is missing.")
     with open(logo_path, "r") as f:
