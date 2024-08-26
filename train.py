@@ -32,9 +32,9 @@ import time
 from tqdm import tqdm
 from safetensors.torch import save_file
 from tokenizers import Tokenizer
-from tokenizers.models import WordLevel
+from tokenizers.models import WordLevel, BPE
 from tokenizers.pre_tokenizers import WhitespaceSplit
-from tokenizers.trainers import WordLevelTrainer
+from tokenizers.trainers import WordLevelTrainer, BpeTrainer
 from torch.utils.data import DataLoader
 from transformers import DataCollatorForLanguageModeling
 from transformers import PreTrainedTokenizerFast
@@ -562,10 +562,10 @@ def preprocess(config, accelerator=None, ask_for_overwrite=False):
     accelerator.wait_for_everyone()
 
     # Tokenizer creation.
-    if config.tokenizer.type == "whitespace":
+    if config.tokenizer.type in ["whitespace", "bpe"]:
         if accelerator.is_local_main_process:
             accelerator.print("Training whitespace tokenizer...")
-            tokenizer = train_whitespace_tokenizer(raw_datasets)
+            tokenizer = train_tokenizer(config.tokenizer, raw_datasets)
             tokenizer.save_pretrained(tokenizer_path)
         else:
             while not os.path.exists(f"{tokenizer_path}/tokenizer.json"):
@@ -637,21 +637,32 @@ def preprocess(config, accelerator=None, ask_for_overwrite=False):
     return tokenized_datasets, tokenizer
 
 
-def train_whitespace_tokenizer(raw_datasets):
+def train_tokenizer(tokenizer_config, raw_datasets):
     """
-    Trains a whitespace tokenizer using the provided raw datasets.
+    Train a tokenizer based on the given configuration and raw datasets.
     Args:
+        tokenizer_config (TokenizerConfig): The configuration for the tokenizer.
         raw_datasets (dict): A dictionary containing the raw datasets.
     Returns:
-        PreTrainedTokenizerFast: The trained whitespace tokenizer.
+        PreTrainedTokenizerFast: The trained tokenizer.
+    Raises:
+        ValueError: If the tokenizer type is unknown.
     """
     
     # Initialize the tokenizer.
-    tokenizer = Tokenizer(WordLevel(unk_token="[UNK]"))
+    if tokenizer_config.type == "whitespace":
+        tokenizer = Tokenizer(WordLevel(unk_token="[UNK]"))
+        trainer = WordLevelTrainer(
+            special_tokens=["[UNK]", "[PAD]", "[EOS]"]
+        )
+    elif tokenizer_config.type == "bpe":
+        tokenizer = Tokenizer(BPE(unk_token="[UNK]"))
+        trainer = BpeTrainer(
+            special_tokens=["[UNK]", "[PAD]", "[EOS]"]
+        )
+    else:
+        raise ValueError(f"Unknown tokenizer type: {tokenizer_config.tokenizer_type}")
     tokenizer.pre_tokenizer = WhitespaceSplit()
-    trainer = WordLevelTrainer(
-        special_tokens=["[UNK]", "[PAD]", "[EOS]"]
-    )
 
     # Train the tokenizer.
     def get_training_corpus():

@@ -216,7 +216,7 @@ class LanguageModel:
         # Get the number of parameters.
         number_of_parameters = sum(p.numel() for p in self.model.parameters())
         print(f"Number of parameters: {number_of_parameters:_}")
-        sizes = ["K", "M", "B", "T"]
+        sizes = ["", "K", "M", "B", "T"]
         size_index = 0
         while number_of_parameters > 1000:
             number_of_parameters /= 1000
