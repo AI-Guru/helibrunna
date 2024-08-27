@@ -284,6 +284,7 @@ def run_training(config_paths: list[str]):
     history = {
         "loss": [],
         "lr": [],
+        "epoch": [],
         "step": [],
     }
     average_loss = 0.0
@@ -328,6 +329,9 @@ def run_training(config_paths: list[str]):
             # Next step.
             step += 1
 
+            # Compute epoch with fraction.
+            epoch_fraction = epoch + step / len(train_dataloader)
+
             # Save every step.
             if step % save_every_step == 0 and step > 0 and save_every_step > 0:
                 checkpoint_dir = os.path.join(output_dir, f"checkpoint-{step}")
@@ -343,14 +347,15 @@ def run_training(config_paths: list[str]):
                 history["loss"].append(average_loss)
                 history["lr"].append(last_lr)
                 history["step"].append(step)
+                history["epoch"].append(epoch_fraction)
                 running_loss = []
 
                 # Log to wandb.
                 if wandb_project is not None:
-                    accelerator.log({"loss": average_loss, "lr": last_lr}, step=step)
+                    accelerator.log({"loss": average_loss, "lr": last_lr, "epoch": epoch_fraction}, step=step)
                 
                 # Update the progressbar. Use the step as the total. Also display the loss and lr.
-                progress_bar.set_postfix({"loss": average_loss, "lr": last_lr})
+                progress_bar.set_postfix({"loss": average_loss, "lr": last_lr, "epoch": epoch_fraction})
                 progress_bar.update(log_every_step)
 
     # End training.
