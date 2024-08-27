@@ -22,6 +22,7 @@ from accelerate import Accelerator
 from dacite import from_dict
 from datasets import load_dataset, load_from_disk
 import fire
+import hashlib
 import json
 from omegaconf import OmegaConf
 import multiprocessing
@@ -174,7 +175,6 @@ def run_training(config_paths: list[str]):
 
     # Create the model.
     accelerator.print("Creating model...")
-    #model_type = config.model.get("type", "xLSTMLMModel")
     model = model_from_config(config.model)
     model = model.to(device=accelerator.device)
     model.reset_parameters()
@@ -525,18 +525,29 @@ def preprocess(config, accelerator=None, ask_for_overwrite=False):
     # Load the dataset.
     hugging_face_id = config.dataset.hugging_face_id
     model_name = config.training.model_name
+    preprocessed_path = f"./preprocessed/{model_name}"
     data_path = f"./preprocessed/{model_name}/data"
     tokenizer_path = f"./preprocessed/{model_name}/tokenizer"
     tokenized_data_path = f"./preprocessed/{model_name}/tokenized_datasets"
+    checksum_path = f"./preprocessed/{model_name}/checksum.txt"
+
+    # Compute the checksum from the configuration.
+    checksum = compute_checksum_from_config(config)
+
+    # Compare the checksum. If the checksum is different, delete the preprocessed data.
+    if os.path.exists(checksum_path) and os.path.exists(data_path):
+        with open(checksum_path, "r") as f:
+            checksum_from_file = f.read()
+        if checksum_from_file != checksum_path:
+            accelerator.print("Checksum mismatch. Deleting preprocessed data...")
+            shutil.rmtree(preprocessed_path)
 
     # If tokenizer and tokenized datasets exist, and ask_for_overwrite is True, ask for overwrite.
     if os.path.exists(tokenizer_path) and os.path.exists(tokenized_data_path) and ask_for_overwrite:
         overwrite = input("Preprocessed data already exists. Overwrite? [y/n]: ")
         if overwrite.lower() == "y":
             accelerator.print("Deleting existing preprocessed data...")
-            shutil.rmtree(data_path)
-            shutil.rmtree(tokenizer_path)
-            shutil.rmtree(tokenized_data_path)
+            shutil.rmtree(preprocessed_path)
 
     # If tokenizer and tokenized datasets exist, load them.
     if os.path.exists(tokenizer_path) and os.path.exists(tokenized_data_path):
@@ -544,6 +555,11 @@ def preprocess(config, accelerator=None, ask_for_overwrite=False):
         tokenizer = PreTrainedTokenizerFast.from_pretrained(tokenizer_path)
         tokenized_datasets = load_from_disk(tokenized_data_path)
         return tokenized_datasets, tokenizer
+    
+    # Write the checksum to a file.
+    os.makedirs(preprocessed_path, exist_ok=True)
+    with open(checksum_path, "w") as f:
+        f.write(checksum)
 
     # Download the dataset.
     if accelerator.is_local_main_process:
@@ -621,6 +637,7 @@ def preprocess(config, accelerator=None, ask_for_overwrite=False):
     else:
         while not os.path.exists(tokenized_data_path):
             time.sleep(1)
+        time.sleep(1)
         tokenized_datasets = load_from_disk(tokenized_data_path)
 
     accelerator.wait_for_everyone()
@@ -635,6 +652,23 @@ def preprocess(config, accelerator=None, ask_for_overwrite=False):
         accelerator.print(f"Tokenized text: {tokenized}")
 
     return tokenized_datasets, tokenizer
+
+
+def compute_checksum_from_config(config):
+
+    # Convert the configuration to a dictionary.
+    config_dict = OmegaConf.to_container(config)
+
+    # Use selective fields for the checksum.
+    checksum_string = "HeliBrunna - A HuggingFace compatible xLSTM trainer by Dr. Tristan Behrens\n"
+    checksum_string += "Configuration:\n"
+    checksum_string += f"training bach size: {config_dict['training']['batch_size']}\n"
+    checksum_string += f"dataset: {str(config_dict['dataset'])}\n"
+    checksum_string += f"Have a pleasant day!\n"
+
+    # Compute the checksum. Use MD5.
+    checksum = hashlib.md5(checksum_string.encode()).hexdigest()
+    return checksum
 
 
 def train_tokenizer(tokenizer_config, raw_datasets):
