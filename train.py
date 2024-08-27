@@ -177,7 +177,7 @@ def run_training(config_paths: list[str]):
     accelerator.print("Creating model...")
     model = model_from_config(config.model)
     model = model.to(device=accelerator.device)
-    model.reset_parameters()
+    #model.reset_parameters()
 
     # Apply precision.
     training_dtype = get_torch_dtype(config.training.weight_precision)
@@ -535,22 +535,24 @@ def preprocess(config, accelerator=None, ask_for_overwrite=False):
     checksum = compute_checksum_from_config(config)
 
     # Compare the checksum. If the checksum is different, delete the preprocessed data.
+    preprocess_anyway = False
     if os.path.exists(checksum_path) and os.path.exists(data_path):
         with open(checksum_path, "r") as f:
             checksum_from_file = f.read()
-        if checksum_from_file != checksum_path:
-            accelerator.print("Checksum mismatch. Deleting preprocessed data...")
-            shutil.rmtree(preprocessed_path)
+        if checksum_from_file != checksum:
+            accelerator.print("Checksum mismatch. Preprocessing anyway...")
+            #shutil.rmtree(preprocessed_path)
+            preprocess_anyway = True
 
     # If tokenizer and tokenized datasets exist, and ask_for_overwrite is True, ask for overwrite.
-    if os.path.exists(tokenizer_path) and os.path.exists(tokenized_data_path) and ask_for_overwrite:
+    if os.path.exists(tokenizer_path) and os.path.exists(tokenized_data_path) and ask_for_overwrite and not preprocess_anyway:
         overwrite = input("Preprocessed data already exists. Overwrite? [y/n]: ")
         if overwrite.lower() == "y":
             accelerator.print("Deleting existing preprocessed data...")
             shutil.rmtree(preprocessed_path)
 
     # If tokenizer and tokenized datasets exist, load them.
-    if os.path.exists(tokenizer_path) and os.path.exists(tokenized_data_path):
+    if os.path.exists(tokenizer_path) and os.path.exists(tokenized_data_path) and not preprocess_anyway:
         accelerator.print("Loading preprocessed data...")
         tokenizer = PreTrainedTokenizerFast.from_pretrained(tokenizer_path)
         tokenized_datasets = load_from_disk(tokenized_data_path)
