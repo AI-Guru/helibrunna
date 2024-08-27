@@ -225,7 +225,7 @@ def run_training(config_paths: list[str]):
         config.training.lr_warmup_steps = int(num_steps * percentage)
 
     # Prepare the optimizer and learning rate scheduler.
-    optimizer_groups = model._create_weight_decay_optim_groups()
+    optimizer_groups = create_weight_decay_optim_groups(model)
     optimizer = torch.optim.AdamW(
         (
             {"weight_decay": config.training.weight_decay, "params": optimizer_groups[0]},
@@ -371,6 +371,29 @@ def run_training(config_paths: list[str]):
     history_path = os.path.join(output_dir, "history.json")
     with open(history_path, "w") as f:
         json.dump(history, f)
+
+
+def create_weight_decay_optim_groups(model):
+
+    # If the model has the methor _create_weight_decay_optim_groups, use it. Likely only for xLSTM.
+    if hasattr(model, "_create_weight_decay_optim_groups"):
+        return model._create_weight_decay_optim_groups()
+    
+    # Following the implementation of xLSTM, we split the parameters into two groups: decay and no_decay.
+    # The decay group contains all parameters except the ones with a shape of 1.
+    # The no_decay group contains all parameters with a shape of 1.
+    else:
+        decay = set()
+        no_decay = set()
+        for name, param in model.named_parameters():
+            if param.requires_grad:
+                if param.ndim > 1:
+                    decay.add(param)
+                elif param.ndim == 1:
+                    no_decay.add(param)
+                else:
+                    raise ValueError(f"Unsupported parameter shape: {param.shape}")
+        return tuple(decay), tuple(no_decay)
 
 
 def get_torch_dtype(dtype: str) -> torch.dtype:
