@@ -257,6 +257,9 @@ def run_training(config_paths: list[str]):
     # Create the readme.
     create_readme(output_dir, config)
 
+    # Get the model name.
+    model_name = config.training.model_name
+
     # Save the config as yaml and delete it.
     with open(os.path.join(output_dir, "config.yaml"), "w") as f:
         OmegaConf.save(config, f)
@@ -272,10 +275,11 @@ def run_training(config_paths: list[str]):
         # Add num_params to the config.
         config_dict["num_params"] = num_params
         config_dict["num_params_human"] = num_params_human
+        wandb_run = run_dir + "-" + model_name
         accelerator.init_trackers(
             project_name=wandb_project, 
             config=config_dict,
-            init_kwargs={"wandb": {"name": run_dir}}
+            init_kwargs={"wandb": {"name": wandb_run}}
         )
 
     # Training loop.

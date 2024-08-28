@@ -13,7 +13,7 @@ training:
   output_dir: "output/jsfakes_garland_xlstm"
   save_every_step: 500
   log_every_step: 10
-  wandb_project: "jsfakes_garland_xlstm"
+  wandb_project: "jsfakes_garland"
   torch_compile: false
 
 model:

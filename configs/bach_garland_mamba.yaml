@@ -1,6 +1,6 @@
 training:
-  model_name: "jsfakes_garland_mamba"
-  batch_size: 16
+  model_name: "bach_garland_mamba"
+  batch_size: 4
   lr: 0.001
   lr_warmup_steps: "10%"
   lr_decay_until_steps: "auto"
@@ -9,21 +9,21 @@ training:
   amp_precision: bfloat16
   weight_precision: float32
   enable_mixed_precision: true
-  num_epochs: 1
-  output_dir: "output/jsfakes_garland_mamba"
+  num_epochs: 4
+  output_dir: "output/bach_garland_mamba"
   save_every_step: 500
   log_every_step: 10
-  wandb_project: "jsfakes_garland"
+  wandb_project: "bach_garland"
   torch_compile: false
 
 model:
   type: "mamba"
   d_model: 64
   n_layers: 4
-  context_length: 2048
+  context_length: 4096
 
 dataset:
-  hugging_face_id: "TristanBehrens/jsfakes_garland_2024-100K"
+  hugging_face_id: "TristanBehrens/bach_garland_2024-100K"
   
 tokenizer:
   type: "whitespace"
