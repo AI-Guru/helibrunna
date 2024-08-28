@@ -234,4 +234,8 @@ class LanguageModel:
             size_index += 1
         print(f"Total size of the model: {total_size:.2f}{sizes[size_index]} for precision 32-bit floats.")
 
+        # Print on which device the model is running. 
+        print(f"Device: {self.device}")
+
+
         

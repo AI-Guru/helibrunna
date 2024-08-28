@@ -1,0 +1,42 @@
+training:
+  model_name: "jsfakes_garland_transformer"
+  batch_size: 16
+  lr: 0.001
+  lr_warmup_steps: "10%"
+  lr_decay_until_steps: "auto"
+  lr_decay_factor: 0.001
+  weight_decay: 0.1
+  amp_precision: bfloat16
+  weight_precision: float32
+  enable_mixed_precision: true
+  num_epochs: 1
+  output_dir: "output/jsfakes_garland_transformer"
+  save_every_step: 500
+  log_every_step: 10
+  wandb_project: "jsfakes_garland"
+  torch_compile: false
+
+model:
+  type: "transformer"
+  dim: 64
+  n_layers: 4
+  n_heads: 4
+  fc_scale: 2
+  context_length: 2048
+
+modelGPT:
+  type: "gpt2"
+  num_blocks: 4
+  embedding_dim: 64
+  decoder:
+    num_heads: 4
+  context_length: 2048
+
+
+dataset:
+  hugging_face_id: "TristanBehrens/jsfakes_garland_2024-100K"
+  
+tokenizer:
+  type: "whitespace"
+  fill_token: "[EOS]"
+

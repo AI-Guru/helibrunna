@@ -8,3 +8,4 @@ colorama==0.4.6
 mambapy==1.2.0
 einops==0.8.0
 mamba-ssm==Version: 2.2.2
+fairscale==0.4.13

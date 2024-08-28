@@ -21,6 +21,7 @@ import torch
 from typing import List, Tuple, Dict
 from dacite import from_dict
 from collections.abc import MutableMapping
+import sys
 
 
 def display_logo():
@@ -233,7 +234,7 @@ def is_torch_compile_ready():
     return False
 
 
-def model_from_config(model_config: DictConfig):
+def model_from_config(model_config: DictConfig, device:str) -> torch.nn.Module:
     """
     Create a model based on the provided model configuration.
 
@@ -264,6 +265,16 @@ def model_from_config(model_config: DictConfig):
         from mambapy.lm import LM, MambaConfig
         model_config_object = from_dict(MambaConfig, OmegaConf.to_container(model_config))
         model = LM(model_config_object, model_config.vocab_size)
+    elif model_type == "transformer":
+        from .models.transformer import TransformerConfig, Transformer
+        model_config_object = from_dict(TransformerConfig, OmegaConf.to_container(model_config))
+        model = Transformer(model_config_object)
+        for param in model.parameters():
+            assert param.requires_grad, "Some parameters don't require gradients!"
+        for name, param in model.named_parameters():
+            print(f"{name}: requires_grad = {param.requires_grad}")
     else:
         raise ValueError(f"Unknown model type: {model_type}")
+    
+    model.to(device)
     return model

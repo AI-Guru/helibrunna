@@ -41,6 +41,9 @@ from transformers import DataCollatorForLanguageModeling
 from transformers import PreTrainedTokenizerFast
 from source.utilities import display_logo, human_readable_number, load_configs, validate_config, is_torch_compile_ready, model_from_config
 
+import torch
+torch.autograd.set_detect_anomaly(True)
+
 # Import the LinearWarmupCosineAnnealing scheduler from the experiments module.
 # Source: https://github.com/NX-AI/xlstm/tree/main
 if not os.path.exists("experiments/lr_scheduler.py"):
@@ -175,8 +178,8 @@ def run_training(config_paths: list[str]):
 
     # Create the model.
     accelerator.print("Creating model...")
-    model = model_from_config(config.model)
-    model = model.to(device=accelerator.device)
+    model = model_from_config(config.model, device=accelerator.device)
+    #model = model.to(device=accelerator.device)
     #model.reset_parameters()
 
     # Apply precision.
