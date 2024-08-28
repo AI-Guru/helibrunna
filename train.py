@@ -334,7 +334,7 @@ def run_training(config_paths: list[str]):
             step += 1
 
             # Compute epoch with fraction.
-            epoch_fraction = epoch + step / len(train_dataloader)
+            epoch_fraction = num_epochs * step / num_steps
 
             # Save every step.
             if step % save_every_step == 0 and step > 0 and save_every_step > 0:

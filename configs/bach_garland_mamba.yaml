@@ -1,6 +1,6 @@
 training:
   model_name: "bach_garland_mamba"
-  batch_size: 4
+  batch_size: 28
   lr: 0.001
   lr_warmup_steps: "10%"
   lr_decay_until_steps: "auto"
