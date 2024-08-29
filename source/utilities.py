@@ -269,10 +269,10 @@ def model_from_config(model_config: DictConfig, device:str) -> torch.nn.Module:
         from .models.transformer import TransformerConfig, Transformer
         model_config_object = from_dict(TransformerConfig, OmegaConf.to_container(model_config))
         model = Transformer(model_config_object)
-        for param in model.parameters():
-            assert param.requires_grad, "Some parameters don't require gradients!"
-        for name, param in model.named_parameters():
-            print(f"{name}: requires_grad = {param.requires_grad}")
+    elif model_type == "pharia":
+        from .models.pharia import PhariaConfig, PhariaModel
+        model_config_object = from_dict(PhariaConfig, OmegaConf.to_container(model_config))
+        model = PhariaModel(model_config_object)
     else:
         raise ValueError(f"Unknown model type: {model_type}")
     

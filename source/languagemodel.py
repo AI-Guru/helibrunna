@@ -90,7 +90,7 @@ class LanguageModel:
         print(json.dumps(OmegaConf.to_container(model_config), indent=4))
 
         # Create the model from the config.
-        model = model_from_config(model_config)
+        model = model_from_config(model_config, device=self.device)
         model.to(self.device)
         self.config = model_config
 

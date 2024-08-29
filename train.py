@@ -199,7 +199,7 @@ def run_training(config_paths: list[str]):
     num_params = sum(p.numel() for p in model.parameters())
     num_params_human = human_readable_number(num_params)
     accelerator.print(f"Number of parameters: {num_params:_} ({num_params_human})")
-    
+
     # Prepare the DataLoader from the tokenized dataset.
     # Each batch will be padded to the maximum length in the batch.
     accelerator.print("Preparing DataLoader...")
