@@ -1,3 +1,6 @@
+torch
+matplotlib==3.9.2
+
 fire==0.6.0
 datasets==2.21.0
 transformers==4.44.0
@@ -7,5 +10,5 @@ tensorboard==2.17.1
 colorama==0.4.6
 mambapy==1.2.0
 einops==0.8.0
-mamba-ssm==Version: 2.2.2
+mamba-ssm==2.2.2
 fairscale==0.4.13
