@@ -26,7 +26,7 @@ from .utilities import display_logo, model_from_config
 
 class LanguageModel:
 
-    def __init__(self, model_path_or_repo, config_overrides={}, mask_special_tokens=True):
+    def __init__(self, model_path_or_repo, config_overrides={}, mask_special_tokens=True, device="auto"):
         """
         Initializes the LanguageModel object.
         Args:
@@ -41,8 +41,34 @@ class LanguageModel:
         # Set the maskt_special_tokens flag.
         self.mask_special_tokens = mask_special_tokens
 
-        # Set the device.
-        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        # Set the device. CPU is default.
+        if device != "auto":
+            
+            # Check if CUDA is available.
+            if not torch.cuda.is_available() and device == "cuda":
+                raise ValueError("CUDA is not available on this system.")
+            
+            # Check if MPS is available.
+            if not torch.backends.mps.is_available() and device == "mps":
+                raise ValueError("MPS is not available on this system.")
+
+            # Set the device.
+            self.device = device
+
+        # Set the device to auto.
+        else:     
+
+            # Set the device to CPU if auto is selected.
+            self.device = "cpu" if device == "auto" else device
+
+            # Check if CUDA is available.
+            if torch.cuda.is_available() and device == "auto":
+                self.device = "cuda"
+
+            # See if MPS is available.
+            # Note: This is disabled for now. It's not working as expected. It is very slow.
+            #if torch.backends.mps.is_available():
+            #    self.device = "mps"
 
         # Display the logo.
         display_logo()
