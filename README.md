@@ -89,6 +89,20 @@ These features are planned or would be great to work on:
 
 ## Setting up things
 
+So far, when it comes to compatibility, we have these configurations:
+
+|                | Apple (no silicon) | Apple (silicon) | Unix (NVIDIA) | Unix (no NVIDIA) | Windows |
+|----------------|--------------------|-----------------|---------------|------------------|---------|
+| xLSTM          | ❔                 | ❌              | ✅             | ❔               | ❔       |
+| Mamba          | ❔                 | ❌              | ✅             | ❔               | ❔       |
+| Pharia         | ❔                 | ✅              | ✅             | ❔               | ❔       |
+| Transformer    | ❔                 | ✅              | ✅             | ❔               | ❔       |
+
+✅ = tested and working, ❌ = tested and not working, ❔ = not tested
+
+
+### Unix (NVIDIA)
+
 First, be so kind and install xLSTM following the instructions here: https://github.com/NX-AI/xlstm
 
 This should be a walk in the park. Do not skip the step with the conda environment and please make sure this environment is active.
@@ -101,6 +115,18 @@ pip install -r requirements.txt
 ```
 
 Then you should be ready to go!
+
+### Apple (silicon)
+
+Support is not fully implemented yet. We are working on it.
+
+It is advised to create a new conda environment and install the dependencies from `requirements.txt`:
+
+```
+conda create -n "helibrunna" python=3.10.13
+conda activate helibrunna
+pip install -r requirements-mac.txt
+```
 
 ## Dataset Preprocessing
 
