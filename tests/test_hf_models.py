@@ -11,13 +11,14 @@ import traceback
 # Define the model ids.
 model_ids = [
     "TristanBehrens/bach-garland-xlstm",
-    #"TristanBehrens/bach-garland-mamba",
-    #"TristanBehrens/bach-garland-pharia",
-    #"TristanBehrens/bach-garland-transformer",
+    "TristanBehrens/bach-garland-mamba",
+    "TristanBehrens/bach-garland-pharia",
+    "TristanBehrens/bach-garland-transformer",
 ]
 
 # Test all models.
 successful_models = []
+statistics = {}
 for model_id in model_ids:
     print(f"Testing model: {model_id}...")
     try:
@@ -45,6 +46,12 @@ for model_id in model_ids:
         )
         print(output_dict)
 
+        # Update the statistics.
+        statistics[model_id] = {
+            "elapsed_time": output_dict["elapsed_time"],
+            "tokens_per_second": output_dict["tokens_per_second"],
+        }
+
         # Append the model_id to the successful models.
         successful_models.append(model_id)
     
@@ -55,3 +62,10 @@ for model_id in model_ids:
 
 # Print the successful models.
 print(f"Successful models: {successful_models}")
+
+# Print the statistics.
+for model_id in successful_models:
+    print(f"Statistics for model: {model_id}")
+    statistics_model = statistics[model_id]
+    for key, value in statistics_model.items():
+        print(f"{key}: {value}")

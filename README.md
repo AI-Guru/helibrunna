@@ -91,15 +91,14 @@ These features are planned or would be great to work on:
 
 So far, when it comes to compatibility, we have these configurations:
 
-|                | Apple (no silicon) | Apple (silicon) | Unix (NVIDIA) | Unix (no NVIDIA) | Windows |
-|----------------|--------------------|-----------------|---------------|------------------|---------|
-| xLSTM          | ❔                 | ❌              | ✅             | ❔               | ❔       |
-| Mamba          | ❔                 | ❌              | ✅             | ❔               | ❔       |
-| Pharia         | ❔                 | ✅              | ✅             | ❔               | ❔       |
-| Transformer    | ❔                 | ✅              | ✅             | ❔               | ❔       |
+|                | Apple (no silicon) | Apple (silicon) | Unix (NVIDIA) | Unix (no NVIDIA) | Raspberry Pi    | Windows |
+|----------------|--------------------|-----------------|---------------|------------------|-----------------|---------|
+| xLSTM          | ❔                 | ❌              | ✅             | ❔               | ❌               | ❔      |
+| Mamba          | ❔                 | ❌              | ✅             | ❔               | ❌               | ❔      |
+| Pharia         | ❔                 | ✅              | ✅             | ❔               | ✅               | ❔      |
+| Transformer    | ❔                 | ✅              | ✅             | ❔               | ✅               | ❔      |
 
 ✅ = tested and working, ❌ = tested and not working, ❔ = not tested
-
 
 ### Unix (NVIDIA)
 
@@ -126,6 +125,18 @@ It is advised to create a new conda environment and install the dependencies fro
 conda create -n "helibrunna" python=3.10.13
 conda activate helibrunna
 pip install -r requirements-mac.txt
+```
+
+### Raspberry Pi
+
+Support is not fully implemented yet. We are working on it.
+
+It is advised to create a new conda environment and install the dependencies from `requirements.txt`:
+
+```
+conda create -n "helibrunna" python=3.12.4
+conda activate helibrunna
+pip install -r requirements-raspberry.txt
 ```
 
 ## Dataset Preprocessing
@@ -217,5 +228,38 @@ python pushtohuggingface.py --model_path MODEL_PATH --username_or_orga USERNAME_
 Make sure to fill in `MODEL_PATH`, `USERNAME_OR_ORGA`, and `REPO_NAME`. `MODEL_PATH` is usually a directory that starts with `run_`.
 
 You might want to edit the `README.md` file.
+
+## Inference speeds
+
+Here are some inference speeds for the models that we have trained:
+
+|                | Apple (no silicon) | Apple (silicon) | Unix (NVIDIA) | Unix (no NVIDIA) | Raspberry Pi    | Windows |
+|----------------|--------------------|-----------------|---------------|------------------|-----------------|---------|
+| xLSTM          | ❔                 | ❔              | ❔             | ❔               | ❔               | ❔       |
+| Mamba          | ❔                 | ❔              | ❔             | ❔               | ❔               | ❔       |
+| Pharia         | ❔                 | ❔              | ❔             | ❔               | 51               | ❔       |
+| Transformer    | ❔                 | ❔              | ❔             | ❔               | 64               | ❔       |
+
+These are the models that we have tested:
+
+- https://huggingface.co/TristanBehrens/bach-garland-xlstm
+- https://huggingface.co/TristanBehrens/bach-garland-mamba
+- https://huggingface.co/TristanBehrens/bach-garland-pharia
+- https://huggingface.co/TristanBehrens/bach-garland-transformer
+
+
+Raspberry Pi:
+
+- Platform: Linux
+- Platform Version: #1 SMP PREEMPT Debian 1:6.6.31-1+rpt1 (2024-05-29)
+- Architecture: aarch64
+- Processor: 
+- Python Version: 3.12.4
+- CPU Cores (Logical): 4
+- CPU Cores (Physical): 4
+- Total Memory (GB): 7.8636627197265625
+- Total Disk Space (GB): 116.66678619384766
+- GPU: GPUtil not installed or no GPU detected
+
 
 # THANKS!
