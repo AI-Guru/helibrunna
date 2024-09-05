@@ -11,7 +11,7 @@ tensorboard==2.17.1
 colorama==0.4.6
 mambapy==1.2.0
 einops==0.8.0
-#mamba-ssm==2.2.2 # Mamba 
+#mamba-ssm==2.2.2 # Mamba doesn't work on Raspberry Pi.
 fairscale==0.4.13
 onnx==1.15.0
 onnxruntime==1.18.0

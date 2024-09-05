@@ -117,7 +117,7 @@ Then you should be ready to go!
 
 ### Apple (silicon)
 
-Support is not fully implemented yet. We are working on it.
+Support is not fully implemented yet. We are working on it. Currently we believe that you should only use this platform for inference and not for training.
 
 It is advised to create a new conda environment and install the dependencies from `requirements.txt`:
 
@@ -129,11 +129,12 @@ pip install -r requirements-mac.txt
 
 ### Raspberry Pi
 
-Support is not fully implemented yet. We are working on it.
+Support is not fully implemented yet. We are working on it. Currently we believe that you should only use this platform for inference and not for training.
 
 It is advised to create a new conda environment and install the dependencies from `requirements.txt`:
 
 ```
+sudo apt-get install cmake
 conda create -n "helibrunna" python=3.12.4
 conda activate helibrunna
 pip install -r requirements-raspberry.txt
@@ -147,10 +148,11 @@ Usually the dateset preprocessing happens very early when you start a training. 
 python train.py preprocess configs/musicxlstm.yaml
 ```
 
-## Training xLSTM
+## Training xLSTM and other models.
 
 Here, we will collect a few examples. Make sure that the conda environment is active.
 
+Note: Training is so far only tested on Unix (NVIDIA).
 
 ### Training a music-xLSTM on Johann Sebastian Bach chorales
 
@@ -233,12 +235,18 @@ You might want to edit the `README.md` file.
 
 Here are some inference speeds for the models that we have trained. Unit of measurement is tokens per second:
 
-|                | Apple (no silicon) | Apple (silicon) | Unix (NVIDIA) | Unix (no NVIDIA) | Raspberry Pi    | Windows |
-|----------------|--------------------|-----------------|---------------|------------------|-----------------|---------|
-| xLSTM          | ❔                 | ❔              | 230            | ❔               | ❔              | ❔       |
-| Mamba          | ❔                 | ❔              | 237            | ❔               | ❔              | ❔       |
-| Pharia         | ❔                 | 688             | 364            | ❔               | 51              | ❔       |
-| Transformer    | ❔                 | 980             | 528            | ❔               | 64              | ❔       |
+|                  | Apple (no silicon) | Apple (silicon) | Unix (NVIDIA) | Unix (no NVIDIA) | Raspberry Pi    | Windows |
+|------------------|--------------------|-----------------|---------------|------------------|-----------------|---------|
+| xLSTM            | ❔                 | ❔              | 230            | ❔               | ❔              | ❔       |
+| Mamba            | ❔                 | ❔              | 237            | ❔               | ❔              | ❔       |
+| Pharia           | ❔                 | 688             | 364            | ❔               | 51              | ❔       |
+| Transformer      | ❔                 | 980             | 528            | ❔               | 64              | ❔       |
+| xLSTM ONNX       | ❔                 | ❔              | 230            | ❔               | ❔              | ❔       |
+| Mamba ONNX       | ❔                 | ❔              | 237            | ❔               | ❔              | ❔       |
+| Pharia ONNX      | ❔                 | 688             | 364            | ❔               | 51              | ❔       |
+| Transformer ONNX | ❔                 | 980             | 528            | ❔               | 64              | ❔       |
+
+A question mark means that the model has not been tested on this platform or that the experiment did not work.
 
 These are the models that we have tested:
 
