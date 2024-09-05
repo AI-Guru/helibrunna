@@ -235,7 +235,7 @@ Here are some inference speeds for the models that we have trained. Unit of meas
 
 |                | Apple (no silicon) | Apple (silicon) | Unix (NVIDIA) | Unix (no NVIDIA) | Raspberry Pi    | Windows |
 |----------------|--------------------|-----------------|---------------|------------------|-----------------|---------|
-| xLSTM          | ❔                 | ❔              | 23             | ❔               | ❔              | ❔       |
+| xLSTM          | ❔                 | ❔              | 230            | ❔               | ❔              | ❔       |
 | Mamba          | ❔                 | ❔              | 237            | ❔               | ❔              | ❔       |
 | Pharia         | ❔                 | 688             | 364            | ❔               | 51              | ❔       |
 | Transformer    | ❔                 | 980             | 528            | ❔               | 64              | ❔       |
