@@ -6,7 +6,9 @@ sys.path.append(os.path.join(script_folder, ".."))
 
 # Regular imports.
 from source.languagemodel import LanguageModel
+from source.onnxlanguagemodel import OnnxLanguageModel
 import traceback
+import itertools
 
 # Define the model ids.
 model_ids = [
@@ -16,13 +18,22 @@ model_ids = [
     "TristanBehrens/bach-garland-transformer",
 ]
 
+model_classes = [
+    LanguageModel,
+    OnnxLanguageModel,
+]
+
 # Test all models.
 successful_models = []
 statistics = {}
-for model_id in model_ids:
-    print(f"Testing model: {model_id}...")
+for model_id, model_class in itertools.product(model_ids, model_classes):
+
+    experiment_key = f"test_{model_id}_{model_class.__name__}"
+    print(f"Testing: {experiment_key}...")
+
+
     try:
-        model = LanguageModel(model_id, config_overrides={"backend": "vanilla"})
+        model = model_class(model_id)
         model.summary()
 
         # One round of warmup.
@@ -47,13 +58,14 @@ for model_id in model_ids:
         print(output_dict)
 
         # Update the statistics.
-        statistics[model_id] = {
+        statistics[experiment_key] = {
             "elapsed_time": output_dict["elapsed_time"],
             "tokens_per_second": output_dict["tokens_per_second"],
+            "output": output_dict["output"][0:100],
         }
 
         # Append the model_id to the successful models.
-        successful_models.append(model_id)
+        successful_models.append(experiment_key)
     
     except Exception as e:
         print(f"Error: {e} for model_id: {model_id}")
@@ -68,4 +80,4 @@ for model_id in successful_models:
     print(f"Statistics for model: {model_id}")
     statistics_model = statistics[model_id]
     for key, value in statistics_model.items():
-        print(f"{key}: {value}")
+        print(f"  {key}: {value}")
