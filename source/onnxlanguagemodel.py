@@ -89,7 +89,8 @@ class OnnxLanguageModel(LanguageModel):
         # Mask the forbidden tokens.
         for forbidden_token in forbidden_tokens:
             assert forbidden_token in self.tokenizer.vocab
-            ids_to_mask.extend(self.tokenizer.convert_tokens_to_ids(forbidden_token))
+            forbidden_token_id = self.tokenizer.convert_tokens_to_ids(forbidden_token)
+            ids_to_mask += [forbidden_token_id]
 
         # Generate the continuation.
         start_time = time.time()
