@@ -231,14 +231,14 @@ You might want to edit the `README.md` file.
 
 ## Inference speeds
 
-Here are some inference speeds for the models that we have trained:
+Here are some inference speeds for the models that we have trained. Unit of measurement is tokens per second:
 
 |                | Apple (no silicon) | Apple (silicon) | Unix (NVIDIA) | Unix (no NVIDIA) | Raspberry Pi    | Windows |
 |----------------|--------------------|-----------------|---------------|------------------|-----------------|---------|
-| xLSTM          | ❔                 | ❔              | ❔             | ❔               | ❔               | ❔       |
-| Mamba          | ❔                 | ❔              | ❔             | ❔               | ❔               | ❔       |
-| Pharia         | ❔                 | ❔              | ❔             | ❔               | 51               | ❔       |
-| Transformer    | ❔                 | ❔              | ❔             | ❔               | 64               | ❔       |
+| xLSTM          | ❔                 | ❔              | 23             | ❔               | ❔              | ❔       |
+| Mamba          | ❔                 | ❔              | 237            | ❔               | ❔              | ❔       |
+| Pharia         | ❔                 | ❔              | 364            | ❔               | 51              | ❔       |
+| Transformer    | ❔                 | ❔              | 528            | ❔               | 64              | ❔       |
 
 These are the models that we have tested:
 
@@ -247,6 +247,24 @@ These are the models that we have tested:
 - https://huggingface.co/TristanBehrens/bach-garland-pharia
 - https://huggingface.co/TristanBehrens/bach-garland-transformer
 
+
+Unix (NVIDIA):
+
+- Platform: Linux
+- Platform Version: #129~20.04.1-Ubuntu SMP Wed Aug 7 13:07:13 UTC 2024
+- Architecture: x86_64
+- Processor: x86_64
+- Python Version: 3.10.9
+- CPU Cores (Logical): 24
+- CPU Cores (Physical): 12
+- Total Memory (GB): 31.250316619873047
+- Total Disk Space (GB): 915.3232879638672
+- GPU 0 Name: NVIDIA GeForce RTX 3090
+- GPU 0 Memory Total (GB): 24.0
+- GPU 0 Driver Version: 535.161.08
+- GPU 1 Name: NVIDIA GeForce RTX 3090
+- GPU 1 Memory Total (GB): 24.0
+- GPU 1 Driver Version: 535.161.08
 
 Raspberry Pi:
 
