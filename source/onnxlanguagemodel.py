@@ -2,6 +2,7 @@ import torch
 from .languagemodel import LanguageModel
 import onnx
 import onnxruntime
+from onnxruntime.quantization import quantize_dynamic, QuantType
 import time
 import numpy as np
 
@@ -9,7 +10,7 @@ import numpy as np
 class OnnxLanguageModel(LanguageModel): 
 
 
-    def __init__(self, model_path: str, **kwargs):
+    def __init__(self, model_path: str, quantization=False, **kwargs):
         super().__init__(model_path, **kwargs)
         assert self.model is not None, "Model not loaded"
 
@@ -38,6 +39,11 @@ class OnnxLanguageModel(LanguageModel):
             do_constant_folding=True,  # Whether to apply constant folding for optimization
             verbose=True  # Print the export process
         )
+
+        # Quantize the model.
+        if quantization:
+            weight_type = QuantType.QUInt8
+            _ = quantize_dynamic("model.onnx", "model.onnx", weight_type=weight_type)
 
         # Unload the model.
         del self.model
