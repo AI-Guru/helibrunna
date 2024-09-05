@@ -23,6 +23,9 @@ model_classes = [
     OnnxLanguageModel,
 ]
 
+# Define the maximum length.
+max_length = 128
+
 # Test all models.
 successful_models = []
 statistics = {}
@@ -50,7 +53,7 @@ for model_id, model_class in itertools.product(model_ids, model_classes):
         output_dict = model.generate(
             prompt="GARLAND_START",
             temperature=0.4,
-            max_length=128,
+            max_length=max_length,
             end_tokens=[],
             forbidden_tokens=[],
             return_structured_output=True

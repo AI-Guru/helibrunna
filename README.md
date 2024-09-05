@@ -233,7 +233,7 @@ You might want to edit the `README.md` file.
 
 ## Inference speeds
 
-Here are some inference speeds for the models that we have trained. Unit of measurement is tokens per second:
+Here are some inference speeds for the models that we have trained. This is just a simple test for generating 128 tokens. Unit of measurement is tokens per second:
 
 |                  | Apple (no silicon) | Apple (silicon) | Unix (NVIDIA) | Unix (no NVIDIA) | Raspberry Pi    | Windows |
 |------------------|--------------------|-----------------|---------------|------------------|-----------------|---------|
