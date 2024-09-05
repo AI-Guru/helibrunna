@@ -140,6 +140,8 @@ conda activate helibrunna
 pip install -r requirements-raspberry.txt
 ```
 
+Note: Installing the dependencies might take a while, because ONNX is compiled from source using cmake.
+
 ## Dataset Preprocessing
 
 Usually the dateset preprocessing happens very early when you start a training. Some datasets might require you to preprocess in a separate step. This is how you can do it:
@@ -244,7 +246,7 @@ Here are some inference speeds for the models that we have trained. This is just
 | xLSTM ONNX       | ❔                 | ❔              | ?              | ❔               | ❔              | ❔       |
 | Mamba ONNX       | ❔                 | ❔              | 876            | ❔               | ❔              | ❔       |
 | Pharia ONNX      | ❔                 | ?               | ?              | ❔               | ?              | ❔       |
-| Transformer ONNX | ❔                 | 1796            | 1881           | ❔               | ?              | ❔       |
+| Transformer ONNX | ❔                 | 1796            | 1881           | ❔               | 400              | ❔       |
 
 A question mark means that the model has not been tested on this platform or that the experiment did not work.
 
