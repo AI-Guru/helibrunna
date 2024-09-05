@@ -125,6 +125,30 @@ class LanguageModel:
         if not os.path.exists(weights_path):
             raise ValueError(f"Weights not found at {weights_path}")
         state_dict = load_file(weights_path)
+
+        # TODO: Permute the last two dimensions of these parameters: xlstm_block_stack.blocks.2.xlstm.slstm_cell._recurrent_kernel_:
+        # Check if we have an xLSTM model and if CUDA is not available.
+        if not torch.cuda.is_available() and model_config.get("type", "xLSTMLMModel") == "xLSTMLMModel":
+            print(state_dict.keys())
+            endings = ["xlstm.slstm_cell._recurrent_kernel_"]
+            for key, values in state_dict.items():
+                for ending in endings:
+                    if key.endswith(ending):
+                        print(key)
+                        print(values.shape)
+                        
+                        # Option: Permute the last two dimensions.
+                        values = values.permute(0, 2, 1)
+                        
+                        # Option: View the tensor.
+                        #new_shape = (values.shape[0], values.shape[2], values.shape[1])
+                        #values = values.view(new_shape)
+                        
+                        print(values.shape)
+                        state_dict[key] = values
+                        break
+
+        # Load the weights into the model.
         model.load_state_dict(state_dict)
         self.model = model
 
@@ -262,6 +286,3 @@ class LanguageModel:
 
         # Print on which device the model is running. 
         print(f"Device: {self.device}")
-
-
-        

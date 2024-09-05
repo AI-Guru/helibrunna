@@ -37,7 +37,7 @@ for model_id in model_ids:
         # Generate a sequence.
         output_dict = model.generate(
             prompt="GARLAND_START",
-            temperature=0.5,
+            temperature=0.4,
             max_length=128,
             end_tokens=[],
             forbidden_tokens=[],

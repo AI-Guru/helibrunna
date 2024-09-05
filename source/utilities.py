@@ -258,7 +258,7 @@ def model_from_config(model_config: DictConfig, device:str) -> torch.nn.Module:
         
         # If there is no GPU, use the vanilla backend.
         if not torch.cuda.is_available():
-            model_config.backend = "vanilla"
+            #model_config.backend = "vanilla"
             model_config.slstm_block.slstm.backend = "vanilla"
             model_config.mlstm_block.mlstm.backend = "vanilla"
         model_config_object = from_dict(xLSTMLMModelConfig, OmegaConf.to_container(model_config))
