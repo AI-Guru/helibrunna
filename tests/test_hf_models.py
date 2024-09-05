@@ -77,6 +77,7 @@ print(f"Successful models: {successful_models}")
 
 # Print the statistics.
 for model_id in successful_models:
+    print()
     print(f"Statistics for model: {model_id}")
     statistics_model = statistics[model_id]
     for key, value in statistics_model.items():

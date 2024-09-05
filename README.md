@@ -241,10 +241,10 @@ Here are some inference speeds for the models that we have trained. Unit of meas
 | Mamba            | ❔                 | ❔              | 237            | ❔               | ❔              | ❔       |
 | Pharia           | ❔                 | 688             | 364            | ❔               | 51              | ❔       |
 | Transformer      | ❔                 | 980             | 528            | ❔               | 64              | ❔       |
-| xLSTM ONNX       | ❔                 | ❔              | 230            | ❔               | ❔              | ❔       |
-| Mamba ONNX       | ❔                 | ❔              | 237            | ❔               | ❔              | ❔       |
-| Pharia ONNX      | ❔                 | 688             | 364            | ❔               | 51              | ❔       |
-| Transformer ONNX | ❔                 | 980             | 528            | ❔               | 64              | ❔       |
+| xLSTM ONNX       | ❔                 | ❔              | ?              | ❔               | ❔              | ❔       |
+| Mamba ONNX       | ❔                 | ❔              | 876            | ❔               | ❔              | ❔       |
+| Pharia ONNX      | ❔                 | ?               | ?              | ❔               | ?              | ❔       |
+| Transformer ONNX | ❔                 | ?               | 1881           | ❔               | ?              | ❔       |
 
 A question mark means that the model has not been tested on this platform or that the experiment did not work.
 
