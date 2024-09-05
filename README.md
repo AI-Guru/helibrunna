@@ -237,8 +237,8 @@ Here are some inference speeds for the models that we have trained. Unit of meas
 |----------------|--------------------|-----------------|---------------|------------------|-----------------|---------|
 | xLSTM          | ❔                 | ❔              | 23             | ❔               | ❔              | ❔       |
 | Mamba          | ❔                 | ❔              | 237            | ❔               | ❔              | ❔       |
-| Pharia         | ❔                 | ❔              | 364            | ❔               | 51              | ❔       |
-| Transformer    | ❔                 | ❔              | 528            | ❔               | 64              | ❔       |
+| Pharia         | ❔                 | 688             | 364            | ❔               | 51              | ❔       |
+| Transformer    | ❔                 | 980             | 528            | ❔               | 64              | ❔       |
 
 These are the models that we have tested:
 
@@ -247,6 +247,19 @@ These are the models that we have tested:
 - https://huggingface.co/TristanBehrens/bach-garland-pharia
 - https://huggingface.co/TristanBehrens/bach-garland-transformer
 
+
+Apple (Silicon):
+
+- Platform: Darwin
+- Platform Version: Darwin Kernel Version 23.3.0: Wed Dec 20 21:31:10 PST 2023; root:xnu-10002.81.5~7/RELEASE_ARM64_T6031
+- Architecture: arm64
+- Processor: arm
+- Python Version: 3.10.13
+- CPU Cores (Logical): 16
+- CPU Cores (Physical): 16
+- Total Memory (GB): 48.0
+- Total Disk Space (GB): 926.3517189025879
+- GPU: No GPU detected
 
 Unix (NVIDIA):
 
