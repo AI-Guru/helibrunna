@@ -11,9 +11,12 @@ tensorboard==2.17.1
 colorama==0.4.6
 mambapy==1.2.0
 einops==0.8.0
-#mamba-ssm==2.2.2
+#mamba-ssm==2.2.2 # Mamba 
 fairscale==0.4.13
+onnx==1.15.0
+onnxruntime==1.18.0
 
 # Requirements you need when not installing xLSTM.
 omegaconf==2.3.0
 dacite==1.8.1
+
