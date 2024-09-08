@@ -1,0 +1,47 @@
+training:
+  model_name: "bach_garland_phariaplus"
+  batch_size: 22
+  lr: 0.001
+  lr_warmup_steps: "10%"
+  lr_decay_until_steps: "auto"
+  lr_decay_factor: 0.001
+  weight_decay: 0.1
+  amp_precision: bfloat16
+  weight_precision: float32
+  enable_mixed_precision: true
+  num_epochs: 8
+  output_dir: "output/bach_garland_phariaplus"
+  save_every_step: 500
+  log_every_step: 10
+  wandb_project: "bach_garland"
+  torch_compile: false
+
+model:
+  type: "pharia"
+  attention_bias: true
+  attention_dropout: 0.0
+  eos_token_id: 0
+  bos_token_id: 127179
+  pad_token_id: 1
+  hidden_act: "gelu"
+  hidden_size: 132
+  initializer_range: 0.02
+  intermediate_size: 264
+  max_position_embeddings: 2048
+  mlp_bias: true
+  num_attention_heads: 6
+  num_hidden_layers: 6
+  num_key_value_heads: 6
+  rope_scaling: null
+  rope_theta: 1000000
+  tie_word_embeddings: false
+  use_cache: true
+  context_length: 2048
+
+dataset:
+  hugging_face_id: "TristanBehrens/bach_garland_2024-100K"
+  
+tokenizer:
+  type: "whitespace"
+  fill_token: "[EOS]"
+
