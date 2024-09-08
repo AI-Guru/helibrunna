@@ -92,13 +92,19 @@ These features are planned or would be great to work on:
 So far, when it comes to compatibility, we have these configurations:
 
 |                | Apple (no silicon) | Apple (silicon) | Unix (NVIDIA) | Unix (no NVIDIA) | Raspberry Pi    | Windows |
-|----------------|--------------------|-----------------|---------------|------------------|-----------------|---------|
-| xLSTM          | ❔                 | ❌              | ✅             | ❔               | ❌               | ❔      |
-| Mamba          | ❔                 | ❌              | ✅             | ❔               | ❌               | ❔      |
-| Pharia         | ❔                 | ✅              | ✅             | ❔               | ✅               | ❔      |
-| Transformer    | ❔                 | ✅              | ✅             | ❔               | ✅               | ❔      |
+|------------------|--------------------|-----------------|---------------|------------------|-----------------|---------|
+| xLSTM            | ❔                 | ❌              | ✅             | ❔               | ❌               | ❔      |
+| Mamba            | ❔                 | ❌              | ✅             | ❔               | ❌               | ❔      |
+| Pharia           | ❔                 | ✅              | ✅             | ❔               | ✅               | ❔      |
+| Transformer      | ❔                 | ✅              | ✅             | ❔               | ✅               | ❔      |
+| xLSTM ONNX       | ❔                 | ❌              | ❌             | ❔               | ❌               | ❔      |
+| Mamba ONNX       | ❔                 | ❌              | ✅             | ❔               | ❌               | ❔      |
+| Pharia ONNX      | ❔                 | ❌              | ❌             | ❔               | ❌               | ❔      |
+| Transformer ONNX | ❔                 | ✅              | ✅             | ❔               | ✅               | ❔      |
 
 ✅ = tested and working, ❌ = tested and not working, ❔ = not tested
+
+Note that ONNX support is rather rudimentary.
 
 ### Unix (NVIDIA)
 
