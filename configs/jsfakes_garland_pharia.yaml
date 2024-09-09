@@ -1,6 +1,6 @@
 training:
   model_name: "jsfakes_garland_pharia"
-  batch_size: 16
+  batch_size: 48
   lr: 0.001
   lr_warmup_steps: "10%"
   lr_decay_until_steps: "auto"
@@ -9,7 +9,7 @@ training:
   amp_precision: bfloat16
   weight_precision: float32
   enable_mixed_precision: true
-  num_epochs: 1
+  num_epochs: 10
   output_dir: "output/jsfakes_garland_pharia"
   save_every_step: 500
   log_every_step: 10

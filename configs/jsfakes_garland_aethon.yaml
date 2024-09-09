@@ -15,7 +15,7 @@ training:
   log_every_step: 10
   wandb_project: "jsfakes_garland"
   torch_compile: false
-  comment: ""
+  comment: "adds rotary positional embeddings"
 
 model:
   type: "aethon"
