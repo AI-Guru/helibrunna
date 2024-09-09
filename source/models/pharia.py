@@ -68,8 +68,9 @@ class PhariaRotaryEmbedding(nn.Module):
     @torch.no_grad()
     def forward(self, x, position_ids):
         # x: [bs, num_attention_heads, seq_len, head_size]
+        shape = self.inv_freq[None, :, None].float().shape # NOTE: I changed this here because -1 indexing did not work with ONNX.
         inv_freq_expanded = (
-            self.inv_freq[None, :, None].float().expand(position_ids.shape[0], -1, 1)
+            self.inv_freq[None, :, None].float().expand(position_ids.shape[0], shape[1], 1)
         )
         position_ids_expanded = position_ids[:, None, :].float()
         # Force float32 since bfloat16 loses precision on long contexts
@@ -664,8 +665,9 @@ class PhariaModel(nn.Module):
             causal_mask *= torch.arange(
                 target_length, device=device
             ) > cache_position.reshape(-1, 1)
+            shape = causal_mask[None, None, :, :].shape # NOTE: I changed this here because -1 indexing did not work with ONNX.
             causal_mask = causal_mask[None, None, :, :].expand(
-                input_tensor.shape[0], 1, -1, -1
+                input_tensor.shape[0], 1, shape[2], shape[3]
             )
             if attention_mask is not None:
                 causal_mask = (
