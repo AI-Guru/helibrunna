@@ -31,7 +31,6 @@ import sys
 import tempfile
 import time
 from tqdm import tqdm
-from safetensors.torch import save_file
 from tokenizers import Tokenizer
 from tokenizers.models import WordLevel, BPE
 from tokenizers.pre_tokenizers import WhitespaceSplit
@@ -39,7 +38,7 @@ from tokenizers.trainers import WordLevelTrainer, BpeTrainer
 from torch.utils.data import DataLoader
 from transformers import DataCollatorForLanguageModeling
 from transformers import PreTrainedTokenizerFast
-from source.utilities import display_logo, human_readable_number, load_configs, validate_config, is_torch_compile_ready, model_from_config
+from source.utilities import display_logo, human_readable_number, load_configs, validate_config, is_torch_compile_ready, model_from_config, save_model
 
 import torch
 torch.autograd.set_detect_anomaly(True)
@@ -431,31 +430,6 @@ def get_torch_dtype(dtype: str) -> torch.dtype:
     else:
         raise ValueError(f"Unknown dtype: {dtype}")
     
-
-def save_model(model, model_config, output_dir):
-    """
-    Save the model and its configuration to the specified output directory.
-
-    Args:
-        model (torch.nn.Module): The model to be saved.
-        model_config (OmegaConf.DictConfig): The configuration of the model.
-        output_dir (str): The directory where the model and configuration will be saved.
-
-    Returns:
-        None
-    """
-
-    # Make sure the folder exists.
-    os.makedirs(output_dir, exist_ok=True)
-
-    # Save the model.
-    torch.save(model.state_dict(), os.path.join(output_dir, "model.pth"))
-    save_file(model.state_dict(), os.path.join(output_dir, "model.safetensors"))
-
-    # Save the model configuration as JSON.
-    model_config_path = os.path.join(output_dir, "config.yaml")
-    OmegaConf.save(model_config, model_config_path)
-
 
 def create_readme(output_dir, config):
     """
