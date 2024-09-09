@@ -299,6 +299,12 @@ def model_from_config(model_config: DictConfig, device:str) -> torch.nn.Module:
         model_config_object = from_dict(PhariaConfig, OmegaConf.to_container(model_config))
         model = PhariaModel(model_config_object)
     
+    # Create a MiniLLama instance.
+    elif model_type == "minillama":
+        from .models.minillama import MiniLlamaConfig, MiniLlama
+        model_config_object = from_dict(MiniLlamaConfig, OmegaConf.to_container(model_config))
+        model = MiniLlama(model_config_object)
+
     # Create a TransformerXL instance.
     else:
         raise ValueError(f"Unknown model type: {model_type}")
@@ -331,3 +337,4 @@ def save_model(model, model_config, output_dir):
     # Save the model configuration as JSON.
     model_config_path = os.path.join(output_dir, "config.yaml")
     OmegaConf.save(model_config, model_config_path)
+

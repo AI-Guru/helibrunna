@@ -9,6 +9,7 @@ class AethonConfig:
     dim: int
     n_layers: int
     n_heads: int
+    n_key_value_heads: int
     fc_scale: int
     vocab_size: int
     context_length: int
@@ -33,23 +34,28 @@ class MultiHeadAttention(nn.Module):
         assert config.dim % config.n_heads == 0, "Dimension must be divisible by number of heads."
         
         self.n_heads = config.n_heads
+        self.n_key_value_heads = config.n_key_value_heads
+        self.n_key_value_groups = self.n_heads // self.n_key_value_heads
         self.head_dim = config.dim // config.n_heads
         self.scale = self.head_dim ** -0.5
 
         self.query = nn.Linear(config.dim, config.dim)
-        self.key = nn.Linear(config.dim, config.dim)
-        self.value = nn.Linear(config.dim, config.dim)
+        self.key = nn.Linear(config.dim, self.n_key_value_heads * self.head_dim)
+        self.value = nn.Linear(config.dim, self.n_key_value_heads * self.head_dim)
         self.out = nn.Linear(config.dim, config.dim)
 
     def forward(self, x, mask=None, sinusoidal_pos=None):
         B, T, C = x.shape
         q = self.query(x).view(B, T, self.n_heads, self.head_dim).transpose(1, 2)
-        k = self.key(x).view(B, T, self.n_heads, self.head_dim).transpose(1, 2)
-        v = self.value(x).view(B, T, self.n_heads, self.head_dim).transpose(1, 2)
+        k = self.key(x).view(B, T, self.n_key_value_heads, self.head_dim).transpose(1, 2)
+        v = self.value(x).view(B, T, self.n_key_value_heads, self.head_dim).transpose(1, 2)
 
         # Apply rotary embeddings to queries and keys
         if sinusoidal_pos is not None:
             q, k = apply_rotary_pos_emb(q, k, sinusoidal_pos)
+
+        k = k.repeat(1, self.n_key_value_groups, 1, 1)
+        v = v.repeat(1, self.n_key_value_groups, 1, 1)
 
         scores = (q @ k.transpose(-2, -1)) * self.scale
 
@@ -61,6 +67,7 @@ class MultiHeadAttention(nn.Module):
         out = attn @ v
         out = out.transpose(1, 2).contiguous().view(B, T, C)
         return self.out(out)
+
 
 
 class FeedForward(nn.Module):
@@ -82,8 +89,15 @@ class AethonLayer(nn.Module):
         self.ffn = FeedForward(config)
 
     def forward(self, x, mask=None, sinusoidal_pos=None):
-        x = x + self.attn(self.ln1(x), mask, sinusoidal_pos)
-        x = x + self.ffn(self.ln2(x))
+        
+        # GPT Order.
+        #x = x + self.attn(self.ln1(x), mask, sinusoidal_pos)
+        #x = x + self.ffn(self.ln2(x))
+        
+        # Transformer-XL Order.
+        x = self.ln1(x + self.attn(x, mask, sinusoidal_pos))
+        x = self.ln2(x + self.ffn(x))
+        
         return x
 
 

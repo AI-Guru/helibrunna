@@ -1,5 +1,5 @@
 training:
-  model_name: "jsfakes_garland_aethon"
+  model_name: "jsfakes_garland_minillama"
   batch_size: 48
   lr: 0.001
   lr_warmup_steps: "10%"
@@ -10,7 +10,7 @@ training:
   weight_precision: float32
   enable_mixed_precision: true
   num_epochs: 10
-  output_dir: "output/jsfakes_garland_aethon"
+  output_dir: "output/jsfakes_garland_minillama"
   save_every_step: 500
   log_every_step: 10
   wandb_project: "jsfakes_garland"
@@ -18,13 +18,21 @@ training:
   comment: "adds rotary positional embeddings"
 
 model:
-  type: "aethon"
-  dim: 64
-  n_layers: 4
-  n_heads: 4
-  n_key_value_heads: 4
+  type: "minillama"
+  n_embd: 64
+  hidden_size: 128
+  n_layer: 4
+  n_head: 4
+  n_local_heads: 4
+  n_local_kv_heads: 4
+  num_key_value_heads: 4
+  attention_dropout: 0.1
   fc_scale: 2
   context_length: 2048
+  rope_theta: 64
+  eps: 1e-6
+  rms_norm_eps: 1e-6
+
 
 dataset:
   hugging_face_id: "TristanBehrens/jsfakes_garland_2024-100K"
