@@ -20,8 +20,8 @@ from omegaconf import DictConfig, OmegaConf
 import torch
 from typing import List, Tuple, Dict
 from dacite import from_dict
-from collections.abc import MutableMapping
-import sys
+from safetensors.torch import save_file
+
 
 
 def display_logo():
@@ -286,6 +286,12 @@ def model_from_config(model_config: DictConfig, device:str) -> torch.nn.Module:
         from .models.transformer import TransformerConfig, Transformer
         model_config_object = from_dict(TransformerConfig, OmegaConf.to_container(model_config))
         model = Transformer(model_config_object)
+
+    # Create an Aethon instance.
+    elif model_type == "aethon":
+        from .models.aethon import AethonConfig, Aethon
+        model_config_object = from_dict(AethonConfig, OmegaConf.to_container(model_config))
+        model = Aethon(model_config_object)
     
     # Create a Pharia instance.
     elif model_type == "pharia":
@@ -300,3 +306,28 @@ def model_from_config(model_config: DictConfig, device:str) -> torch.nn.Module:
     # Move the model to the device.
     model.to(device)
     return model
+
+
+def save_model(model, model_config, output_dir):
+    """
+    Save the model and its configuration to the specified output directory.
+
+    Args:
+        model (torch.nn.Module): The model to be saved.
+        model_config (OmegaConf.DictConfig): The configuration of the model.
+        output_dir (str): The directory where the model and configuration will be saved.
+
+    Returns:
+        None
+    """
+
+    # Make sure the folder exists.
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Save the model.
+    torch.save(model.state_dict(), os.path.join(output_dir, "model.pth"))
+    save_file(model.state_dict(), os.path.join(output_dir, "model.safetensors"))
+
+    # Save the model configuration as JSON.
+    model_config_path = os.path.join(output_dir, "config.yaml")
+    OmegaConf.save(model_config, model_config_path)

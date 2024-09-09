@@ -91,14 +91,20 @@ These features are planned or would be great to work on:
 
 So far, when it comes to compatibility, we have these configurations:
 
-|                | Apple (no silicon) | Apple (silicon) | Unix (NVIDIA) | Unix (no NVIDIA) | Raspberry Pi    | Windows |
-|----------------|--------------------|-----------------|---------------|------------------|-----------------|---------|
-| xLSTM          | ❔                 | ❌              | ✅             | ❔               | ❌               | ❔      |
-| Mamba          | ❔                 | ❌              | ✅             | ❔               | ❌               | ❔      |
-| Pharia         | ❔                 | ✅              | ✅             | ❔               | ✅               | ❔      |
-| Transformer    | ❔                 | ✅              | ✅             | ❔               | ✅               | ❔      |
+|                  | Apple (no silicon) | Apple (silicon) | Unix (NVIDIA) | Unix (no NVIDIA) | Raspberry Pi    |
+|------------------|--------------------|-----------------|---------------|------------------|-----------------|
+| xLSTM            | 🧐                 | ❌              | ✅             | 🧐               | ❌               |
+| Mamba            | 🧐                 | ❌              | ✅             | 🧐               | ❌               |
+| Pharia           | 🤞                 | ✅              | ✅             | 🧐               | ✅               |
+| Transformer      | 🤞                 | ✅              | ✅             | 🤞               | ✅               |
+| xLSTM ONNX       | 🧐                 | ❌              | ❌             | 🧐               | ❌               |
+| Mamba ONNX       | 🧐                 | ❌              | ✅             | 🧐               | ❌               |
+| Pharia ONNX      | 🧐                 | ❌              | ❌             | 🧐               | ❌               |
+| Transformer ONNX | 🤞                 | ✅              | ✅             | 🤞               | ✅               |
 
-✅ = tested and working, ❌ = tested and not working, ❔ = not tested
+✅ = tested and working, ❌ = tested and not working, ❔ = not tested, 🤞 = not tested but very likely, 🧐 = not tested but very unlikely
+
+Note that ONNX support is rather rudimentary.
 
 ### Unix (NVIDIA)
 
@@ -237,16 +243,16 @@ You might want to edit the `README.md` file.
 
 Here are some inference speeds for the models that we have trained. This is just a simple test for generating 128 tokens. Unit of measurement is tokens per second:
 
-|                  | Apple (no silicon) | Apple (silicon) | Unix (NVIDIA) | Unix (no NVIDIA) | Raspberry Pi    | Windows |
-|------------------|--------------------|-----------------|---------------|------------------|-----------------|---------|
-| xLSTM            | ❔                 | ❔              | 230            | ❔               | ❔              | ❔       |
-| Mamba            | ❔                 | ❔              | 237            | ❔               | ❔              | ❔       |
-| Pharia           | ❔                 | 688             | 364            | ❔               | 51              | ❔       |
-| Transformer      | ❔                 | 980             | 528            | ❔               | 64              | ❔       |
-| xLSTM ONNX       | ❔                 | ❔              | ?              | ❔               | ❔              | ❔       |
-| Mamba ONNX       | ❔                 | ❔              | 876            | ❔               | ❔              | ❔       |
-| Pharia ONNX      | ❔                 | ?               | ?              | ❔               | ?              | ❔       |
-| Transformer ONNX | ❔                 | 1796            | 1881           | ❔               | 400            | ❔       |
+|                  | Apple (no silicon) | Apple (silicon) | Unix (NVIDIA) | Unix (no NVIDIA) | Raspberry Pi    |
+|------------------|--------------------|-----------------|---------------|------------------|-----------------|
+| xLSTM            | ❔                 | ❔              | 230            | ❔               | ❔              |
+| Mamba            | ❔                 | ❔              | 237            | ❔               | ❔              |
+| Pharia           | ❔                 | 688             | 364            | ❔               | 51              |
+| Transformer      | ❔                 | 980             | 528            | ❔               | 64              |
+| xLSTM ONNX       | ❔                 | ❔              | ?              | ❔               | ❔              |
+| Mamba ONNX       | ❔                 | ❔              | 876            | ❔               | ❔              |
+| Pharia ONNX      | ❔                 | ?               | ?              | ❔               | ?              |
+| Transformer ONNX | ❔                 | 1796            | 1881           | ❔               | 400            |
 
 A question mark means that the model has not been tested on this platform or that the experiment did not work.
 

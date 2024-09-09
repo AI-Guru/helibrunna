@@ -1,5 +1,5 @@
 training:
-  model_name: "jsfakes_garland_transformer"
+  model_name: "jsfakes_garland_aethon"
   batch_size: 16
   lr: 0.001
   lr_warmup_steps: "10%"
@@ -10,14 +10,14 @@ training:
   weight_precision: float32
   enable_mixed_precision: true
   num_epochs: 1
-  output_dir: "output/jsfakes_garland_transformer"
+  output_dir: "output/jsfakes_garland_aethon"
   save_every_step: 500
   log_every_step: 10
   wandb_project: "jsfakes_garland"
   torch_compile: false
 
 model:
-  type: "transformer"
+  type: "aethon"
   dim: 64
   n_layers: 4
   n_heads: 4

@@ -26,7 +26,7 @@ from .utilities import display_logo, model_from_config
 
 class LanguageModel:
 
-    def __init__(self, model_path_or_repo, config_overrides={}, mask_special_tokens=True, device="auto"):
+    def __init__(self, model_path_or_repo, config_overrides={}, mask_special_tokens=True, device="auto", ignore_tokenizer=False):
         """
         Initializes the LanguageModel object.
         Args:
@@ -153,11 +153,12 @@ class LanguageModel:
         self.model = model
 
         # Load the tokenizer.
-        tokenizer_path = os.path.join(tokenizer_path, "tokenizer.json")
-        if not os.path.exists(tokenizer_path):
-            raise ValueError(f"Tokenizer not found at {tokenizer_path}")
-        tokenizer = PreTrainedTokenizerFast.from_pretrained(tokenizer_path)
-        self.tokenizer = tokenizer
+        if not ignore_tokenizer:
+            tokenizer_path = os.path.join(tokenizer_path, "tokenizer.json")
+            if not os.path.exists(tokenizer_path):
+                raise ValueError(f"Tokenizer not found at {tokenizer_path}")
+            tokenizer = PreTrainedTokenizerFast.from_pretrained(tokenizer_path)
+            self.tokenizer = tokenizer
 
 
     def generate(
