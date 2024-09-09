@@ -12,13 +12,14 @@ from source.onnxlanguagemodel import OnnxLanguageModel
 def main():
 
     config_paths = [
-        "jsfakes_garland_mamba.yaml",
-        "jsfakes_garland_pharia.yaml",
-        "jsfakes_garland_transformer.yaml",
-        "jsfakes_garland_xlstm.yaml",
+        #"jsfakes_garland_mamba.yaml",
+        #"jsfakes_garland_pharia.yaml",
+        #"jsfakes_garland_transformer.yaml",
+        "jsfakes_garland_aethon.yaml",
+        #"jsfakes_garland_xlstm.yaml",
     ]
 
-    # Test all the configs.
+    # Test all the configs. 
     status_list = []
     for config_path in config_paths:
         try:

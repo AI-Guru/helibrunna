@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 @dataclass
-class TransformerConfig:
+class AethonConfig:
     dim: int
     n_layers: int
     n_heads: int
@@ -14,7 +14,7 @@ class TransformerConfig:
 
 
 class MultiHeadAttention(nn.Module):
-    def __init__(self, config: TransformerConfig):
+    def __init__(self, config: AethonConfig):
         super(MultiHeadAttention, self).__init__()
         assert config.dim % config.n_heads == 0, "Dimension must be divisible by number of heads."
         
@@ -46,7 +46,7 @@ class MultiHeadAttention(nn.Module):
 
 
 class FeedForward(nn.Module):
-    def __init__(self, config: TransformerConfig):
+    def __init__(self, config: AethonConfig):
         super(FeedForward, self).__init__()
         self.fc1 = nn.Linear(config.dim, config.fc_scale * config.dim)
         self.fc2 = nn.Linear(config.fc_scale * config.dim, config.dim)
@@ -55,9 +55,9 @@ class FeedForward(nn.Module):
         return self.fc2(F.gelu(self.fc1(x)))
 
 
-class TransformerLayer(nn.Module):
-    def __init__(self, config: TransformerConfig):
-        super(TransformerLayer, self).__init__()
+class AethonLayer(nn.Module):
+    def __init__(self, config: AethonConfig):
+        super(AethonLayer, self).__init__()
         self.ln1 = nn.LayerNorm(config.dim)
         self.attn = MultiHeadAttention(config)
         self.ln2 = nn.LayerNorm(config.dim)
@@ -69,15 +69,15 @@ class TransformerLayer(nn.Module):
         return x
 
 
-class Transformer(nn.Module):
-    def __init__(self, config: TransformerConfig):
-        super(Transformer, self).__init__()
+class Aethon(nn.Module):
+    def __init__(self, config: AethonConfig):
+        super(Aethon, self).__init__()
         self.embedding = nn.Embedding(config.vocab_size, config.dim)
         
         # Initialize positional encodings
         self.positional_encoding = self.create_positional_encoding(config.context_length, config.dim)
         
-        self.layers = nn.ModuleList([TransformerLayer(config) for _ in range(config.n_layers)])
+        self.layers = nn.ModuleList([AethonLayer(config) for _ in range(config.n_layers)])
         self.ln_f = nn.LayerNorm(config.dim)
         self.head = nn.Linear(config.dim, config.vocab_size, bias=False)
         self.context_length = config.context_length
@@ -104,3 +104,4 @@ class Transformer(nn.Module):
             x = layer(x, mask=causal_mask)
         x = self.ln_f(x)
         return self.head(x)
+

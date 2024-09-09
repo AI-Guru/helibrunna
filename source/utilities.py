@@ -286,6 +286,12 @@ def model_from_config(model_config: DictConfig, device:str) -> torch.nn.Module:
         from .models.transformer import TransformerConfig, Transformer
         model_config_object = from_dict(TransformerConfig, OmegaConf.to_container(model_config))
         model = Transformer(model_config_object)
+
+    # Create an Aethon instance.
+    elif model_type == "aethon":
+        from .models.aethon import AethonConfig, Aethon
+        model_config_object = from_dict(AethonConfig, OmegaConf.to_container(model_config))
+        model = Aethon(model_config_object)
     
     # Create a Pharia instance.
     elif model_type == "pharia":
