@@ -170,6 +170,17 @@ class OnnxLanguageModel(LanguageModel):
                 "elapsed_time": elapsed_time,
                 "tokens_per_second": tokens_per_second
             }
+        
+    def predict(self, input: torch.Tensor):
+        """
+        Predicts the output for a given input using the ONNX language model.
+        """
+        assert input.shape[0] == 1
+        input_np = input.cpu().numpy()
+        ort_inputs = {self.onnx_session.get_inputs()[0].name: input_np}
+        ort_outs = self.onnx_session.run(None, ort_inputs)
+        return torch.tensor(ort_outs[0])
+    
     
 
     def summary(self):

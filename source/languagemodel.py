@@ -256,6 +256,16 @@ class LanguageModel:
                 "tokens_per_second": tokens_per_second
             }
         
+    def predict(self, input_ids: torch.Tensor):
+        """
+        Predicts the logits for a given input.
+        Args:
+            input_ids (torch.Tensor): The input tensor.
+        Returns:
+            torch.Tensor: The logits tensor.
+        """
+        return self.model(input_ids.to(self.device))
+        
     def summary(self):
         """
         Prints a summary of the model. Makes the model architecture readable. Includes the number of parameters.
