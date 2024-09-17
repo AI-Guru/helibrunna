@@ -43,6 +43,10 @@ def main():
         if exception != "":
             result += f" {exception}"
         print(result)
+    print("")
+    print("-" * 80)
+    print("")
+    
 
 
 def test(config_path):
