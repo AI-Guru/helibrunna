@@ -15,17 +15,16 @@ training:
   log_every_step: 10
   wandb_project: "jsfakes_garland"
   torch_compile: false
-  comment: "adds rotary positional embeddings"
 
 model:
   type: "minillama"
-  hidden_size: 128
+  hidden_size: 64
   n_layer: 4
   n_head: 4
   n_local_heads: 4
   n_local_kv_heads: 4
   num_key_value_heads: 4
-  attention_dropout: 0.1
+  attention_dropout: 0.0
   fc_scale: 2
   context_length: 2048
   rope_theta: 64

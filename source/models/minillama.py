@@ -17,6 +17,7 @@ class MiniLlamaConfig:
     n_local_kv_heads: int
     num_key_value_heads: int
     attention_dropout: float
+    fc_scale: int
     rope_theta: int
     eps: float = 1e-6
     rms_norm_eps: float = 1e-6
@@ -44,8 +45,7 @@ class FeedForward(nn.Module):
     def __init__(self, config):
         super().__init__()
         self.config = config
-        self.intermediate_size = int(
-            4 * self.config.hidden_size * (2 / 3))  # https://arxiv.org/pdf/2302.13971.pdf PAGE 3
+        self.intermediate_size = int(config.fc_scale * self.config.hidden_size * (2 / 3))  # https://arxiv.org/pdf/2302.13971.pdf PAGE 3
         self.c_fc = nn.Linear(self.config.hidden_size, self.intermediate_size, bias=False)
         self.v_proj = nn.Linear(self.config.hidden_size, self.intermediate_size, bias=False)
         self.c_proj = nn.Linear(self.intermediate_size, self.config.hidden_size, bias=False)
@@ -210,14 +210,14 @@ class MiniLlama(nn.Module):
         return n_params
 
     def forward(self, idx):
-        print("idx", idx.shape)
         device = idx.device
         b, t = idx.size()
 
+        # Create the causal mask.
         #mask = create_masks(idx, device)  # Creating mask to handle left to right attention and mask
 
-        # Create the causal mask (size T x T)
-        mask = torch.tril(torch.ones(t, t)).to(device)
+        # Create the causal mask. NOTE: This is an replacement of the above because the above is not working with ONNX.
+        mask = 1 - torch.tril(torch.ones(t, t)).to(device) # 1 - was used to make the lower triangle 0
         mask = mask.unsqueeze(0).unsqueeze(1)  # Shape: (1, 1, T, T)
 
         x = self.transformer.embedding_layer(idx)  # token embeddings of shape (b, t, embd)
