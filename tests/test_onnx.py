@@ -15,8 +15,8 @@ def main():
     config_paths = [
         #"jsfakes_garland_mamba.yaml",
         #"jsfakes_garland_pharia.yaml",
-        #"jsfakes_garland_transformer.yaml",
-        #"jsfakes_garland_aethon.yaml",
+        "jsfakes_garland_transformer.yaml",
+        "jsfakes_garland_aethon.yaml",
         "jsfakes_garland_minillama.yaml",
         #"jsfakes_garland_mingru.yaml",
         #"jsfakes_garland_xlstm.yaml",
@@ -62,6 +62,7 @@ def test(config_path):
 
     # Create the model.
     model = model_from_config(model_config, device="cpu")
+    model.eval()  # Set the model to evaluation mode
 
     # Test the model.
     input = torch.randint(0, 1000, (1, 10))
@@ -76,20 +77,36 @@ def test(config_path):
         os.makedirs(os.path.dirname(model_path), exist_ok=True)
         print(f"Saving model to {model_path}")
         save_model(model, model_config, model_path)
-        print("Test passed")
 
         # Load the Pytorch model and the ONNX model.
         search_path = os.path.dirname(model_path)
         pytorch_model = LanguageModel(search_path, ignore_tokenizer=True)
+        pytorch_model.model.eval() 
         onnx_model = OnnxLanguageModel(search_path, quantization=False, ignore_tokenizer=True)
 
-        # Test the ONNX model.
+        # Expected output shape
+        expected_output_shape = (1, 10, 1000)
+
+        # Test the Pytorch model first.
         input = torch.randint(0, 1000, (1, 10))
         output_pytorch = pytorch_model.predict(input)
-        output_onnx = onnx_model.predict(input)
+        output_pytorch_2 = pytorch_model.predict(input)
+        if not expected_output_shape == output_pytorch.shape:
+            raise ValueError(f"Expected output shape {expected_output_shape}, got {output_pytorch.shape}")
+        if not torch.allclose(output_pytorch.to("cpu"), output_pytorch_2.to("cpu"), atol=1e-5):
+            raise ValueError("Output is not the same for the Pytorch model")
 
-        # Output should be the same.
-        assert torch.allclose(output_pytorch.to("cpu"), output_onnx.to("cpu"), atol=1e-5), "Output should be the same"
+        # Test the ONNX model.
+        output_onnx = onnx_model.predict(input)
+        output_onnx_2 = onnx_model.predict(input)
+        if not expected_output_shape == output_onnx.shape:
+            raise ValueError(f"Expected output shape {expected_output_shape}, got {output_onnx.shape}")
+        if not torch.allclose(output_onnx.to("cpu"), output_onnx_2.to("cpu"), atol=1e-5):
+            raise ValueError("Output is not the same for the ONNX model")
+
+        # Output should be the same for both models.
+        if not torch.allclose(output_pytorch.to("cpu"), output_onnx.to("cpu"), atol=1e-5):
+            raise ValueError("Output is not the same")
 
         # Done.
         del onnx_model

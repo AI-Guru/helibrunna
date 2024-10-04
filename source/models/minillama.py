@@ -124,18 +124,22 @@ class Attention(nn.Module):
         B, T, C = x.size()  # batch size, sequence length, embedding dimensionality (hidden_size)
 
         position_ids = torch.arange(T, device=x.device).repeat([B, 1]).long()
-        # print("++++++++",position_ids)
 
         q = self.wq(x)
         k = self.wk(x)
         v = self.wv(x)
 
+        # Reshaping for multi-head attention.
         q = q.view(B, T, self.num_heads, self.head_dim).transpose(1, 2)
         k = k.view(B, T, self.num_key_value_heads, self.head_dim).transpose(1, 2)
         v = v.view(B, T, self.num_key_value_heads, self.head_dim).transpose(1, 2)
 
-        #         print("q++++++++", q.shape)
+        # Assertions to check dimensions before rotary embeddings
+        assert q.shape[-1] == self.head_dim, f"q head_dim mismatch: {q.shape[-1]} != {self.head_dim}"
+        assert k.shape[-1] == self.head_dim, f"k head_dim mismatch: {k.shape[-1]} != {self.head_dim}"
+        assert v.shape[-1] == self.head_dim, f"v head_dim mismatch: {v.shape[-1]} != {self.head_dim}"
 
+        # Rotary embeddings.
         cos, sin = self.rotary_emb(v, position_ids, seq_len=None)
         q, k = apply_rotary_pos_emb(q, k, cos, sin, None)
 
@@ -147,7 +151,6 @@ class Attention(nn.Module):
             matmul_qk += (mask * -1e9)
 
         attn_scores = F.softmax(matmul_qk, dim=-1)
-        # print("attn_scores", attn_scores)
         attn_scores = F.dropout(attn_scores, p=self.attention_dropout, training=self.training)
         y = torch.matmul(attn_scores, v)  # Weighted sum
 
@@ -207,19 +210,24 @@ class MiniLlama(nn.Module):
         return n_params
 
     def forward(self, idx):
+        print("idx", idx.shape)
         device = idx.device
         b, t = idx.size()
 
-        mask = create_masks(idx, device)  # Creating mask to handle left to right attention and mask
-        # print("mask+++++++++++++", mask)
+        #mask = create_masks(idx, device)  # Creating mask to handle left to right attention and mask
 
-        pos = torch.arange(0, t, dtype=torch.long, device=device)  # shape (t)
+        # Create the causal mask (size T x T)
+        mask = torch.tril(torch.ones(t, t)).to(device)
+        mask = mask.unsqueeze(0).unsqueeze(1)  # Shape: (1, 1, T, T)
 
         x = self.transformer.embedding_layer(idx)  # token embeddings of shape (b, t, embd)
 
         for decoder_block in self.transformer.h:
             x = decoder_block(x, mask)
         x = self.transformer.layer_norm(x)
+        assert x.shape[-1] == self.config.hidden_size, f"x shape: {x.shape} hidden_size: {self.config.hidden_size}"
+        assert x.shape[1] == t, f"x shape: {x.shape} t: {t}"
+        assert x.shape[0] == b, f"x shape: {x.shape} b: {b}"
 
         logits = self.lm_head(x)  # note: using list [-1] to preserve the time dim
 

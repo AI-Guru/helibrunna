@@ -32,6 +32,7 @@ class OnnxLanguageModel(LanguageModel):
 
         # Move the model to the CPU.
         self.model.to("cpu")
+        self.model.eval()  # Set the model to evaluation mode
 
         # Define example input tensors for export
         batch_size = 1
@@ -41,6 +42,7 @@ class OnnxLanguageModel(LanguageModel):
         # Prepare dynamic_axes to allow dynamic batch size and sequence length
         dynamic_axes = {
             'input_ids': {0: 'batch_size', 1: 'seq_length'},
+            'output': {0: 'batch_size', 1: 'seq_len'}
         }
 
         # Export the model to ONNX
@@ -51,7 +53,7 @@ class OnnxLanguageModel(LanguageModel):
             input_names=['input_ids'],  # Input names
             output_names=['output'],  # Output name
             dynamic_axes=dynamic_axes,  # Dynamic axes for variable batch size and seq length
-            opset_version=14,  # ONNX opset version
+            opset_version=16,  # ONNX opset version
             do_constant_folding=True,  # Whether to apply constant folding for optimization
             verbose=True  # Print the export process
         )
