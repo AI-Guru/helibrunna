@@ -27,7 +27,7 @@ model:
   attention_dropout: 0.0
   fc_scale: 2
   context_length: 2048
-  rope_theta: 64
+  rope_theta: 1000000
   eps: 1e-6
   rms_norm_eps: 1e-6
   padding_token_id: 1
