@@ -17,8 +17,8 @@ def main():
         #"jsfakes_garland_pharia.yaml",
         #"jsfakes_garland_transformer.yaml",
         #"jsfakes_garland_aethon.yaml",
-        #"jsfakes_garland_minillama.yaml",
-        "jsfakes_garland_mingru.yaml",
+        "jsfakes_garland_minillama.yaml",
+        #"jsfakes_garland_mingru.yaml",
         #"jsfakes_garland_xlstm.yaml",
     ]
 

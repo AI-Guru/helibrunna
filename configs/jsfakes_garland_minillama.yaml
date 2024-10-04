@@ -19,7 +19,6 @@ training:
 
 model:
   type: "minillama"
-  n_embd: 64
   hidden_size: 128
   n_layer: 4
   n_head: 4

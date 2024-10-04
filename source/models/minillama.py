@@ -8,7 +8,7 @@ from dataclasses import dataclass
 @dataclass
 class MiniLlamaConfig:
     vocab_size: int
-    n_embd: int
+    hidden_size: int
     hidden_size: int
     context_length: int
     n_layer: int
@@ -20,6 +20,7 @@ class MiniLlamaConfig:
     rope_theta: int
     eps: float = 1e-6
     rms_norm_eps: float = 1e-6
+    weight_tying: bool = False
 
 class RMSNorm(nn.Module):
     def __init__(self, hidden_size, eps=1e-6):
@@ -120,7 +121,7 @@ class Attention(nn.Module):
         )
 
     def forward(self, x, mask=None, training=False):
-        B, T, C = x.size()  # batch size, sequence length, embedding dimensionality (n_embd)
+        B, T, C = x.size()  # batch size, sequence length, embedding dimensionality (hidden_size)
 
         position_ids = torch.arange(T, device=x.device).repeat([B, 1]).long()
         # print("++++++++",position_ids)
@@ -159,14 +160,16 @@ class DecoderBlock(nn.Module):
 
     def __init__(self, config):
         super().__init__()
-        self.ln_1 = RMSNorm(config.n_embd, eps=config.eps)
+        self.ln_1 = RMSNorm(config.hidden_size, eps=config.eps)
         self.attn = Attention(config)
-        self.ln_2 = RMSNorm(config.n_embd, eps=config.eps)
+        self.ln_2 = RMSNorm(config.hidden_size, eps=config.eps)
         self.mlp = FeedForward(config)
 
     def forward(self, x, mask):
-        x = x + self.attn(self.ln_1(x), mask=mask)
-        x = x + self.mlp(self.ln_2(x))
+        x = self.ln_1(x)
+        x = x + self.attn(x, mask=mask)
+        x = self.ln_2(x)
+        x = x + self.mlp(x)
         return x
 
 
@@ -186,7 +189,8 @@ class MiniLlama(nn.Module):
             layer_norm=RMSNorm(config.hidden_size, eps=config.rms_norm_eps),
         ))
         self.lm_head = nn.Linear(config.hidden_size, config.vocab_size, bias=False)
-        self.transformer.embedding_layer.weight = self.lm_head.weight
+        if config.weight_tying:
+            self.transformer.embedding_layer.weight = self.lm_head.weight
         print("number of parameters: %.2fM" % (self.get_num_params() / 1e6,))
 
     def get_num_params(self, non_embedding=True):
