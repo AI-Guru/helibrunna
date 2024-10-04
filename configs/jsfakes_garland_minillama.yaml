@@ -19,6 +19,7 @@ training:
 model:
   type: "minillama"
   hidden_size: 64
+  hidden_act: "gelu"
   n_layer: 4
   n_head: 4
   n_local_heads: 4

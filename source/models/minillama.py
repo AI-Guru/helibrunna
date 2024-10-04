@@ -9,7 +9,7 @@ from dataclasses import dataclass
 class MiniLlamaConfig:
     vocab_size: int
     hidden_size: int
-    hidden_size: int
+    hidden_act: str
     context_length: int
     n_layer: int
     n_head: int
@@ -50,9 +50,15 @@ class FeedForward(nn.Module):
         self.c_fc = nn.Linear(self.config.hidden_size, self.intermediate_size, bias=False)
         self.v_proj = nn.Linear(self.config.hidden_size, self.intermediate_size, bias=False)
         self.c_proj = nn.Linear(self.intermediate_size, self.config.hidden_size, bias=False)
+        if config.hidden_act == "gelu":
+            self.act = F.gelu
+        elif config.hidden_act == "silu":
+            self.act = F.silu
+        else:
+            raise ValueError(f"Activation function {config.hidden_act} not supported")
 
     def forward(self, x):
-        x = F.silu(self.c_fc(x)) * self.v_proj(x)
+        x = self.act(self.c_fc(x)) * self.v_proj(x)
         return self.c_proj(x)
 
 
