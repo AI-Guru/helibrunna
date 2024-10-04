@@ -305,6 +305,12 @@ def model_from_config(model_config: DictConfig, device:str) -> torch.nn.Module:
         model_config_object = from_dict(MiniLlamaConfig, OmegaConf.to_container(model_config))
         model = MiniLlama(model_config_object)
 
+    # Create a MinGRULM instance.
+    elif model_type == "mingru":
+        from .models.mingru import MinGRULMConfig, MinGRULM
+        model_config_object = from_dict(MinGRULMConfig, OmegaConf.to_container(model_config))
+        model = MinGRULM(model_config_object)
+
     # Create a TransformerXL instance.
     else:
         raise ValueError(f"Unknown model type: {model_type}")

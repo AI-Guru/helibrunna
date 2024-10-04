@@ -13,4 +13,4 @@ einops==0.8.0
 mamba-ssm==2.2.2
 fairscale==0.4.13
 onnx==1.15.0
-onnxruntime==1.18.0
+onnxruntime==1.19.2
