@@ -30,6 +30,7 @@ model:
   rope_theta: 64
   eps: 1e-6
   rms_norm_eps: 1e-6
+  padding_token_id: 1
 
 
 dataset:

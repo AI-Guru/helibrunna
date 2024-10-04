@@ -22,6 +22,7 @@ class MiniLlamaConfig:
     eps: float = 1e-6
     rms_norm_eps: float = 1e-6
     weight_tying: bool = False
+    padding_token_id: int = 0
 
 class RMSNorm(nn.Module):
     def __init__(self, hidden_size, eps=1e-6):
@@ -186,6 +187,8 @@ class MiniLlama(nn.Module):
 
         self.vocab_size = config.vocab_size
 
+        self.padding_token_id = config.padding_token_id
+
         self.transformer = nn.ModuleDict(dict(
             embedding_layer=nn.Embedding(self.vocab_size, config.hidden_size),
             h=nn.ModuleList([DecoderBlock(config) for _ in range(config.n_layer)]),
@@ -214,11 +217,11 @@ class MiniLlama(nn.Module):
         b, t = idx.size()
 
         # Create the causal mask.
-        #mask = create_masks(idx, device)  # Creating mask to handle left to right attention and mask
+        mask = create_masks(idx, self.padding_token_id, device)  # Creating mask to handle left to right attention and mask
 
         # Create the causal mask. NOTE: This is an replacement of the above because the above is not working with ONNX.
-        mask = 1 - torch.tril(torch.ones(t, t)).to(device) # 1 - was used to make the lower triangle 0
-        mask = mask.unsqueeze(0).unsqueeze(1)  # Shape: (1, 1, T, T)
+        #mask = 1 - torch.tril(torch.ones(t, t)).to(device) # 1 - was used to make the lower triangle 0
+        #mask = mask.unsqueeze(0).unsqueeze(1)  # Shape: (1, 1, T, T)
 
         x = self.transformer.embedding_layer(idx)  # token embeddings of shape (b, t, embd)
 
@@ -243,10 +246,9 @@ class MiniLlama(nn.Module):
         elif isinstance(module, nn.Embedding):
             torch.nn.init.normal_(module.weight, mean=0.0, std=0.02)
 
-    
-def create_masks(inp, device=None):
+def create_masks(inp, padding_token_id, device=None):
     """
-    Create both padding mask and attention mask for the input sequence.
+    Create both padding mask and attention mask for the input sequence using PyTorch.
 
     Args:
     inp: Input sequence tensor (PyTorch).
@@ -254,21 +256,15 @@ def create_masks(inp, device=None):
     Returns:
     mask: Combined mask tensor (PyTorch).
     """
-    seq_np = inp.cpu().numpy() if inp.is_cuda else inp.numpy()
 
-    def get_padding_mask(seq):
-        padding_mask = (seq == 0).astype(float)
-        # Add extra dimensions to add the padding to the attention logits.
-        return padding_mask[:, np.newaxis, np.newaxis, :]  # (batch_size, 1, 1, seq_len)
+    # Padding mask: 1 where inp is 0 (padding), 0 elsewhere
+    padding_mask = (inp == padding_token_id).unsqueeze(1).unsqueeze(2).float()
 
-    def attention_mask(size):
-        mask = 1 - np.tril(np.ones((size, size)))
-        return mask  # (seq_len, seq_len)
+    # Attention mask: 1 for positions that shouldn't be attended to
+    seq_len = inp.size(1)
+    att_mask = (1 - torch.tril(torch.ones(seq_len, seq_len, device=inp.device)))
 
-    att_mask = attention_mask(seq_np.shape[1])
-    padding_mask = get_padding_mask(seq_np)
-    mask_np = np.maximum(padding_mask, att_mask[np.newaxis, :, :])
-
-    mask = torch.tensor(mask_np, dtype=torch.float32)
+    # Combine padding and attention masks
+    mask = torch.max(padding_mask, att_mask)
 
     return mask.to(device)
