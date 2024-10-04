@@ -152,6 +152,9 @@ class LanguageModel:
         model.load_state_dict(state_dict)
         self.model = model
 
+        # Set to evaluation mode.
+        self.model.eval()
+
         # Load the tokenizer.
         if not ignore_tokenizer:
             tokenizer_path = os.path.join(tokenizer_path, "tokenizer.json")

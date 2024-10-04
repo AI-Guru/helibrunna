@@ -33,7 +33,6 @@ model:
   rms_norm_eps: 1e-6
   padding_token_id: 1
 
-
 dataset:
   hugging_face_id: "TristanBehrens/jsfakes_garland_2024-100K"
   
