@@ -311,6 +311,11 @@ def model_from_config(model_config: DictConfig, device:str) -> torch.nn.Module:
         model_config_object = from_dict(MinGRULMConfig, OmegaConf.to_container(model_config))
         model = MinGRULM(model_config_object)
 
+    elif model_type == "llamathree":
+        from .models.llamathree import LlamaThreeConfig, LlamaThree
+        model_config_object = from_dict(LlamaThreeConfig, OmegaConf.to_container(model_config))
+        model = LlamaThree(model_config_object)
+
     # Create a TransformerXL instance.
     else:
         raise ValueError(f"Unknown model type: {model_type}")
