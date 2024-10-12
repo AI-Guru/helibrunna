@@ -21,20 +21,20 @@ class MinLSTM(nn.Module):
     def __init__(self, hidden_size, expansion_factor = 1.):
         super().__init__()
         
-        hidden_size_inner = int(hidden_size * expansion_factor)
-        self.to_gates_and_hidden = nn.Linear(hidden_size, hidden_size_inner * 3, bias = False)
-        self.to_out = nn.Linear(hidden_size_inner, hidden_size, bias = False) if expansion_factor != 1. else nn.Identity()
+        self.hidden_size_inner = int(hidden_size * expansion_factor)
+        self.to_gates_and_hidden = nn.Linear(hidden_size, self.hidden_size_inner * 3, bias = False)
+        self.to_out = nn.Linear(self.hidden_size_inner, hidden_size, bias = False) if expansion_factor != 1. else nn.Identity()
 
     def forward(self, x, prev_hidden = None, prev_cell = None, return_next_state = False):
-        seq_len = x.shape[1]
+        batch_size, seq_len, _ = x.shape
         
         if prev_hidden is None:
-            prev_hidden = torch.zeros_like(x[:, 0])
+            prev_hidden = torch.zeros(batch_size, self.hidden_size_inner, device=x.device)
         if prev_cell is None:
-            prev_cell = torch.zeros_like(x[:, 0])
+            prev_cell = torch.zeros(batch_size, self.hidden_size_inner, device=x.device)
 
         gates_and_hidden = self.to_gates_and_hidden(x)
-        f_gate, i_gate, tilde_h = gates_and_hidden.chunk(3, hidden_size=-1)
+        f_gate, i_gate, tilde_h = gates_and_hidden.chunk(3, dim=-1)
 
         f_gate = torch.sigmoid(f_gate)
         i_gate = torch.sigmoid(i_gate)
@@ -53,18 +53,21 @@ class MinLSTM(nn.Module):
             log_f = torch.log(f_gate + 1e-8)
             log_i = torch.log(i_gate + 1e-8)
             
-            log_coeffs = torch.stack([log_f, log_i], hidden_size=-1)
-            log_coeffs = torch.logsumexp(log_coeffs, hidden_size=-1, keephidden_size=True) - log_coeffs
+            log_coeffs = torch.stack([log_f, log_i], dim=-1)
+            log_coeffs = torch.logsumexp(log_coeffs, dim=-1, keepdim=True) - log_coeffs
 
-            log_f_prime, log_i_prime = log_coeffs.unbind(hidden_size=-1)
+            log_f_prime, log_i_prime = log_coeffs.unbind(dim=-1)
 
-            prev_state = torch.stack([prev_cell, prev_hidden], hidden_size=1)
+            prev_state = torch.stack([prev_cell, prev_hidden], dim=1)
             log_prev_state = torch.log(prev_state + 1e-8)
 
-            log_state = torch.stack([log_f_prime + log_prev_state[:, 0:1], log_i_prime + torch.log(tilde_h + 1e-8)], hidden_size=-1)
-            log_state = torch.logsumexp(log_state, hidden_size=-1)
+            log_state = torch.stack([
+                log_f_prime + log_prev_state[:, 0:1].expand(-1, seq_len, -1),
+                log_i_prime + torch.log(tilde_h + 1e-8)
+            ], dim=-1)
+            log_state = torch.logsumexp(log_state, dim=-1)
 
-            cumsum_log_f_prime = torch.cumsum(log_f_prime, hidden_size=1)
+            cumsum_log_f_prime = torch.cumsum(log_f_prime, dim=1)
             log_cell = cumsum_log_f_prime + log_state
 
             next_cell = torch.exp(log_cell)
