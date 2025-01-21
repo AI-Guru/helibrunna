@@ -20,9 +20,11 @@ def main():
         #"jsfakes_garland_aethon.yaml",
         #"jsfakes_garland_minillama.yaml",
         #"jsfakes_garland_llamathree.yaml",
+        "jsfakes_garland_omnius.yaml",
 
-        "jsfakes_garland_mingru.yaml",
-        "jsfakes_garland_minlstm.yaml",
+
+        #"jsfakes_garland_mingru.yaml",
+        #"jsfakes_garland_minlstm.yaml",
 
         #"jsfakes_garland_xlstm.yaml",
     ]

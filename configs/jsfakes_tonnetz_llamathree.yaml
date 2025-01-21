@@ -1,5 +1,5 @@
 training:
-  model_name: "drums2024_llamathree"
+  model_name: "jsfakes_tonnetz_llamathree"
   batch_size: 48
   lr: 0.001
   lr_warmup_steps: "10%"
@@ -10,10 +10,10 @@ training:
   weight_precision: float32
   enable_mixed_precision: true
   num_epochs: 5
-  output_dir: "output/drums2024_llamathree"
+  output_dir: "output/jsfakes_tonnetz_llamathree"
   save_every_step: 500
   log_every_step: 10
-  wandb_project: "drums2024"
+  wandb_project: "tonnetz"
   torch_compile: false
 
 model:
@@ -30,7 +30,7 @@ model:
   dtype: float32
 
 dataset:
-  hugging_face_id: "TristanBehrens/drums2024-1M"
+  hugging_face_id: "TristanBehrens/jsfakes_tonnetz"
   
 tokenizer:
   type: "whitespace"
