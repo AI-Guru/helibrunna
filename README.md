@@ -1,13 +1,18 @@
 # Helibrunna
-## A Hugging Face compatible xLSTM trainer by Dr. Tristan Behrens
+## A Hugging Face compatible Small Language Models trainer by Dr. Tristan Behrens
 
-![](assets/helibrunna02.jpg)
+![Helibrunna](assets/helibrunna02.jpg)
 
-This is how ChatGPT describes the project:
+> Helibrunna is an advanced, open-source framework designed to facilitate the training and experimentation of Small Language Models. Developed by Dr. Tristan Behrens, this tool aims to explore the potentials of small models. It is especially tailored for use with datasets hosted on Hugging Face, making it a versatile tool for developers and researchers in the AI community.
 
-> Helibrunna is an advanced, open-source framework designed to facilitate the training and experimentation of xLSTM models. Developed by Dr. Tristan Behrens, this tool aims to explore the potential superiority of xLSTM architectures over traditional self-attention-based transformers. It is especially tailored for use with datasets hosted on Hugging Face, making it a versatile tool for developers and researchers in the AI community.
+In addition to the xLSTM models, the project also supports:
 
-Nice!
+- **Pharia**: An experimental architecture aimed at pushing the boundaries of efficiency in sequential tasks.
+- **Vanilla Transformer**: The original transformer architecture, known for its multi-head self-attention mechanism.
+- **Mini Llama**: A lightweight version of Llama, optimized for smaller devices and faster inference without sacrificing too much performance.
+- **Llama Three**: The latest iteration in the Llama family, bringing enhanced capabilities and performance improvements over its predecessors.
+
+This expanded functionality makes Helibrunna a versatile tool not just for xLSTM exploration, but also for working with a variety of other state-of-the-art models, providing developers and researchers with a comprehensive suite of tools for AI experimentation.
 
 ## Star History
 
