@@ -107,7 +107,7 @@ config_schema = {
         "context_length": int,
     },
     "dataset": {
-        "hugging_face_id": str,
+        "hugging_face_ids": list[str],
     },
     "tokenizer": {
         "type": str,

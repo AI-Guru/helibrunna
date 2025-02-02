@@ -1,5 +1,5 @@
 training:
-  model_name: "metal_interleaved"
+  model_name: "metal_cluster"
   batch_size: 32
   lr: 0.001
   lr_warmup_steps: "10%"
@@ -10,7 +10,7 @@ training:
   weight_precision: float32
   enable_mixed_precision: true
   num_epochs: 5
-  output_dir: "output/metal_interleaved"
+  output_dir: "output/metal_cluster"
   save_every_step: 500
   log_every_step: 10
   wandb_project: "tonnetz"
@@ -30,7 +30,9 @@ model:
   dtype: float32
 
 dataset:
-  hugging_face_id: "TristanBehrens/metal_interleaved"
+  hugging_face_ids: 
+    - "TristanBehrens/metal_cluster"
+    - "TristanBehrens/metal_interleaved"
   
 tokenizer:
   type: "whitespace"

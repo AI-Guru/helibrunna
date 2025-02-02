@@ -20,7 +20,7 @@ import matplotlib.pyplot as plt
 import torch
 from accelerate import Accelerator
 from dacite import from_dict
-from datasets import load_dataset, load_from_disk
+from datasets import load_dataset, load_from_disk, concatenate_datasets
 import fire
 import hashlib
 import json
@@ -476,7 +476,7 @@ def create_readme(output_dir, config):
     languages = "\n".join([f"  - {language}" for language in languages])
 
     # Datasets.
-    datasets = [config.dataset.hugging_face_id]
+    datasets = config.dataset.hugging_face_ids
     datasets = "\n".join([f"  - {dataset}" for dataset in datasets])
     
     # License.
@@ -520,7 +520,7 @@ def preprocess_only(config_paths: list[str]):
 
 def preprocess(config, accelerator=None, ask_for_overwrite=False):
     """
-    Preprocess the dataset and tokenizer. Only the main process should perform this task.
+    Preprocess multiple datasets and tokenizer. Only the main process should perform this task.
     
     Args:
         config (OmegaConf): The configuration object.
@@ -531,8 +531,8 @@ def preprocess(config, accelerator=None, ask_for_overwrite=False):
         PreTrainedTokenizerFast: The tokenizer.
     """
 
-    # Load the dataset.
-    hugging_face_id = config.dataset.hugging_face_id
+    # Load the datasets
+    hugging_face_ids = config.dataset.hugging_face_ids  # Changed from hugging_face_id to hugging_face_ids
     model_name = config.training.model_name
     preprocessed_path = f"./preprocessed/{model_name}"
     data_path = f"./preprocessed/{model_name}/data"
@@ -540,51 +540,71 @@ def preprocess(config, accelerator=None, ask_for_overwrite=False):
     tokenized_data_path = f"./preprocessed/{model_name}/tokenized_datasets"
     checksum_path = f"./preprocessed/{model_name}/checksum.txt"
 
-    # Compute the checksum from the configuration.
+    # Compute the checksum from the configuration
     checksum = compute_checksum_from_config(config)
 
-    # Compare the checksum. If the checksum is different, delete the preprocessed data.
+    # Compare the checksum. If the checksum is different, delete the preprocessed data
     preprocess_anyway = False
     if os.path.exists(checksum_path) and os.path.exists(data_path):
         with open(checksum_path, "r") as f:
             checksum_from_file = f.read()
         if checksum_from_file != checksum:
             accelerator.print("Checksum mismatch. Preprocessing anyway...")
-            #shutil.rmtree(preprocessed_path)
             preprocess_anyway = True
 
-    # If tokenizer and tokenized datasets exist, and ask_for_overwrite is True, ask for overwrite.
+    # If tokenizer and tokenized datasets exist, and ask_for_overwrite is True, ask for overwrite
     if os.path.exists(tokenizer_path) and os.path.exists(tokenized_data_path) and ask_for_overwrite and not preprocess_anyway:
         overwrite = input("Preprocessed data already exists. Overwrite? [y/n]: ")
         if overwrite.lower() == "y":
             accelerator.print("Deleting existing preprocessed data...")
             shutil.rmtree(preprocessed_path)
 
-    # If tokenizer and tokenized datasets exist, load them.
+    # If tokenizer and tokenized datasets exist, load them
     if os.path.exists(tokenizer_path) and os.path.exists(tokenized_data_path) and not preprocess_anyway:
         accelerator.print("Loading preprocessed data...")
         tokenizer = PreTrainedTokenizerFast.from_pretrained(tokenizer_path)
         tokenized_datasets = load_from_disk(tokenized_data_path)
         return tokenized_datasets, tokenizer
     
-    # Write the checksum to a file.
+    # Write the checksum to a file
     os.makedirs(preprocessed_path, exist_ok=True)
     with open(checksum_path, "w") as f:
         f.write(checksum)
 
-    # Download the dataset.
+    # Download and combine the datasets
     if accelerator.is_local_main_process:
-        accelerator.print(f"Loading dataset: {hugging_face_id}")
-        raw_datasets = load_dataset(hugging_face_id)
+        accelerator.print(f"Loading datasets: {hugging_face_ids}")
+        raw_datasets = None
+        
+        for dataset_id in hugging_face_ids:
+            accelerator.print(f"Downloading dataset: {dataset_id}")
+            current_dataset = load_dataset(dataset_id)
+            if raw_datasets is None:
+                raw_datasets = current_dataset
+            else:
+                # Combine the datasets
+                for split in raw_datasets:
+                    if split in current_dataset:
+                        raw_datasets[split] = concatenate_datasets([
+                            raw_datasets[split],
+                            current_dataset[split]
+                        ])
 
-        # Save the dataset to disk to be reused by other processes.
-        raw_datasets.save_to_disk(data_path)
-        accelerator.print("Dataset downloaded and saved.")
+        # Save the combined dataset to disk to be reused by other processes
+        #raw_datasets.save_to_disk(data_path)
+
+        # Save the combined dataset to a temporary directory, then move it to the final directory.
+        with tempfile.TemporaryDirectory() as tempdir:
+            temp_data_path = os.path.join(tempdir, "data")
+            raw_datasets.save_to_disk(temp_data_path)
+            shutil.move(temp_data_path, data_path)
+
+        accelerator.print("Datasets downloaded, combined, and saved.")
     else:
-        # Other processes wait for the dataset to be downloaded and saved.
+        # Other processes wait for the dataset to be downloaded and saved
         while not os.path.exists(data_path):
             time.sleep(1)
-        raw_datasets = load_dataset(data_path)
+        raw_datasets = load_from_disk(data_path)
     
     accelerator.wait_for_everyone()
 
@@ -667,17 +687,17 @@ def preprocess(config, accelerator=None, ask_for_overwrite=False):
 
 def compute_checksum_from_config(config):
 
-    # Convert the configuration to a dictionary.
+    # Convert the configuration to a dictionary
     config_dict = OmegaConf.to_container(config)
 
-    # Use selective fields for the checksum.
+    # Use selective fields for the checksum
     checksum_string = "HeliBrunna - A HuggingFace compatible xLSTM trainer by Dr. Tristan Behrens\n"
     checksum_string += "Configuration:\n"
-    checksum_string += f"training bach size: {config_dict['training']['batch_size']}\n"
-    checksum_string += f"dataset: {str(config_dict['dataset'])}\n"
+    checksum_string += f"training batch size: {config_dict['training']['batch_size']}\n"
+    checksum_string += f"datasets: {','.join(config_dict['dataset']['hugging_face_ids'])}\n"  # Updated this line
     checksum_string += f"Have a pleasant day!\n"
 
-    # Compute the checksum. Use MD5.
+    # Compute the checksum. Use MD5
     checksum = hashlib.md5(checksum_string.encode()).hexdigest()
     return checksum
 
